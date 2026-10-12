@@ -1,0 +1,59 @@
+{
+  "kesar": {
+    "id": "kesar",
+    "name": "Kesar & Co",
+    "category": "Ethnic fashion",
+    "city": "Jaipur",
+    "incorporated": "Mar 2025",
+    "daysOnRazorpay": 49,
+    "usualDailyGmv": 150000,
+    "sources": [
+      { "id": "mca", "name": "Company registration", "via": "MCA", "status": "verified", "pulledOn": "2026-08-28", "withdrawable": true,
+        "details": [{ "label": "CIN", "value": "U47912RJ2025PTC0XXXXX" }, { "label": "Directors", "value": "2 (both KYC verified)" }, { "label": "Incorporated", "value": "12 Mar 2025" }] },
+      { "id": "gst", "name": "GST filing status", "via": "GSTN via Account Aggregator", "status": "verified", "pulledOn": "2026-08-28", "withdrawable": true,
+        "details": [{ "label": "GSTIN", "value": "08XXXXX1234X1ZX" }, { "label": "Returns filed", "value": "18 of 18 on time" }, { "label": "Last filing", "value": "GSTR-3B, Sep 2026" }] },
+      { "id": "bank", "name": "Pre-Razorpay bank inflows", "via": "Account Aggregator (purpose: growth readiness)", "status": "consented", "pulledOn": "2026-08-28", "withdrawable": true,
+        "details": [{ "label": "History", "value": "14 months" }, { "label": "Avg monthly inflow", "value": "₹31.2 lakh" }, { "label": "Peak month", "value": "Oct 2025 (₹58 lakh, Diwali)" }] },
+      { "id": "razorpay", "name": "Razorpay behaviour", "via": "Razorpay payments and shipping data", "status": "verified", "pulledOn": "2026-10-17", "withdrawable": false,
+        "details": [{ "label": "Refund rate", "value": "2.1%" }, { "label": "Dispute rate", "value": "0.3%" }, { "label": "Repeat customer rate", "value": "34%" }, { "label": "Delivery confirmations", "value": "96% of shipped orders" }] }
+    ]
+  },
+  "glow": {
+    "id": "glow",
+    "name": "Glow Ritual",
+    "category": "Beauty",
+    "city": "Bengaluru",
+    "incorporated": "Nov 2024",
+    "daysOnRazorpay": 35,
+    "usualDailyGmv": 120000,
+    "sources": [
+      { "id": "mca", "name": "Company registration", "via": "MCA", "status": "verified", "pulledOn": "2026-09-12", "withdrawable": true,
+        "details": [{ "label": "CIN", "value": "U20232KA2024PTC1XXXXX" }, { "label": "Directors", "value": "1 (KYC verified)" }, { "label": "Incorporated", "value": "4 Nov 2024" }] },
+      { "id": "gst", "name": "GST filing status", "via": "GSTN via Account Aggregator", "status": "not_consented", "pulledOn": null, "withdrawable": true,
+        "details": [{ "label": "Status", "value": "Consent not given" }] },
+      { "id": "bank", "name": "Pre-Razorpay bank inflows", "via": "Account Aggregator (purpose: growth readiness)", "status": "not_consented", "pulledOn": null, "withdrawable": true,
+        "details": [{ "label": "Status", "value": "Consent not given. Baseline uses category peers." }] },
+      { "id": "razorpay", "name": "Razorpay behaviour", "via": "Razorpay payments and shipping data", "status": "verified", "pulledOn": "2026-10-17", "withdrawable": false,
+        "details": [{ "label": "Refund rate", "value": "3.4%" }, { "label": "Dispute rate", "value": "0.5%" }, { "label": "Repeat customer rate", "value": "41%" }, { "label": "Delivery confirmations", "value": "88% of shipped orders" }] }
+    ]
+  },
+  "urbannest": {
+    "id": "urbannest",
+    "name": "UrbanNest Decor",
+    "category": "Home decor",
+    "city": "Noida",
+    "incorporated": "Jul 2026",
+    "daysOnRazorpay": 21,
+    "usualDailyGmv": 330000,
+    "sources": [
+      { "id": "mca", "name": "Company registration", "via": "MCA", "status": "verified", "pulledOn": "2026-09-26", "withdrawable": true,
+        "details": [{ "label": "CIN", "value": "U47591UP2026PTC2XXXXX" }, { "label": "Directors", "value": "2 (KYC verified)" }, { "label": "Incorporated", "value": "18 Jul 2026" }] },
+      { "id": "gst", "name": "GST filing status", "via": "GSTN via Account Aggregator", "status": "not_consented", "pulledOn": null, "withdrawable": true,
+        "details": [{ "label": "Status", "value": "Consent not given" }] },
+      { "id": "bank", "name": "Pre-Razorpay bank inflows", "via": "Account Aggregator (purpose: growth readiness)", "status": "not_consented", "pulledOn": null, "withdrawable": true,
+        "details": [{ "label": "Status", "value": "Consent not given. Baseline uses category peers." }] },
+      { "id": "razorpay", "name": "Razorpay behaviour", "via": "Razorpay payments and shipping data", "status": "verified", "pulledOn": "2026-10-17", "withdrawable": false,
+        "details": [{ "label": "Refund rate", "value": "1.2%" }, { "label": "Dispute rate", "value": "0.2%" }, { "label": "Repeat customer rate", "value": "6%" }, { "label": "Delivery confirmations", "value": "41% of shipped orders" }] }
+    ]
+  }
+}

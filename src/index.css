@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+/* Colours from the "Razorpay Kit" design system (measured from razorpay.com).
+   Semantic warning/danger tones are additions for risk labels; the kit has none. */
+@theme {
+  --color-brand: #305eff;
+  --color-brand-dark: #2950da;
+  --color-brand-logo: #3395ff;
+  --color-brand-light: #75a3ff;
+  --color-brand-wash: #eef2ff;
+  --color-accent: #c6f076;
+  --color-positive: #009e5c;
+  --color-positive-wash: #e6f6ee;
+  --color-stage: #032a3e;
+  --color-stage-text: #48d08c;
+  --color-ink: #192839;
+  --color-ink-body: #40566d;
+  --color-ink-muted: #64748a;
+  --color-ink-subtle: #8996a9;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f1f5fa;
+  --color-surface-alt-2: #ebf0f5;
+  --color-line: #ccd7eb;
+  --color-warn: #9a5b00;
+  --color-warn-wash: #fff4e0;
+  --color-danger: #c4302b;
+  --color-danger-wash: #fdeceb;
+
+  --font-display: "TASA Orbiter", Inter, system-ui, sans-serif;
+  --font-sans: Inter, system-ui, sans-serif;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  background: var(--color-surface-alt);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+.font-display {
+  letter-spacing: 0;
+}
+.card-highlight {
+  box-shadow: 0 0 0 2px var(--color-brand), 0 0 0 6px rgb(48 94 255 / 0.15);
+  transition: box-shadow 200ms ease;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgb(255 255 255 / 0.4);
+  border-top-color: white;
+  border-radius: 999px;
+  animation: spin 700ms linear infinite;
+}

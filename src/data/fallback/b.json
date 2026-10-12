@@ -1,0 +1,19 @@
+{
+  "label": "partly_explained",
+  "confidence": 0.62,
+  "reasons": [
+    { "text": "A viral reel mentioning the serum surged 2 hours before volume rose, which supports genuine demand.", "evidence_ids": ["E8"] },
+    { "text": "Order value is flat (₹778 → ₹797) while order count is 6.0x, which matches beauty's order-count-led festive pattern.", "evidence_ids": ["E2", "E3", "E1"] },
+    { "text": "There is no website offer and no coupon use, so the size of the lift rests on the social signal alone.", "evidence_ids": ["E4", "E5"] },
+    { "text": "7 complaint posts about delayed delivery point to dispatch strain. 81% new customers means little order history to lean on.", "evidence_ids": ["E9", "E6"] },
+    { "text": "No Account Aggregator consent, so the baseline comes from category peers rather than this merchant's own history.", "evidence_ids": ["E10"] }
+  ],
+  "recommended_action": "hold_and_request",
+  "partial_release_pct": 0,
+  "reserve_days": 30,
+  "evidence_requests": [
+    "Delivery confirmations (AWB and proof of delivery) for orders over ₹2,000",
+    "Current dispatch capacity: orders packed and shipped per day, and courier partner"
+  ],
+  "merchant_message": "Your demand looks real, but we need delivery proof for larger orders and your dispatch capacity."
+}
