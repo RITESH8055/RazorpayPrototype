@@ -3,14 +3,14 @@ import type { Label } from "../lib/types";
 
 export function Card({ title, right, children, className = "", id, highlighted }: { title?: ReactNode; right?: ReactNode; children: ReactNode; className?: string; id?: string; highlighted?: boolean }) {
   return (
-    <section id={id} className={`rounded-md border border-line bg-white ${highlighted ? "card-highlight" : ""} ${className}`}>
+    <section id={id} className={`rounded-2xl bg-white shadow-card ${highlighted ? "card-highlight" : ""} ${className}`}>
       {title && (
-        <header className="flex items-center justify-between gap-2 border-b border-line/70 px-4 py-2.5">
-          <h3 className="font-display text-[13px] font-semibold text-ink">{title}</h3>
+        <header className="flex items-center justify-between gap-2 px-5 pt-4">
+          <h3 className="font-display text-[14px] font-semibold text-ink">{title}</h3>
           {right}
         </header>
       )}
-      <div className="p-4">{children}</div>
+      <div className={title ? "px-5 pb-5 pt-3" : "p-5"}>{children}</div>
     </section>
   );
 }
@@ -61,27 +61,31 @@ export function Button({
   disabled,
   className = "",
   title,
+  size = "md",
 }: {
   children: ReactNode;
   onClick?: () => void;
-  variant?: "primary" | "secondary" | "ghost" | "danger";
+  variant?: "primary" | "secondary" | "ghost" | "danger" | "plain";
   disabled?: boolean;
   className?: string;
   title?: string;
+  size?: "md" | "lg";
 }) {
   const styles = {
     primary: "bg-brand text-white hover:bg-brand-dark",
-    secondary: "border border-line bg-white text-ink hover:border-brand hover:text-brand-dark",
+    secondary: "bg-surface-alt text-ink hover:bg-surface-alt-2",
     ghost: "text-brand-dark hover:bg-brand-wash",
-    danger: "border border-danger/40 bg-white text-danger hover:bg-danger-wash",
+    danger: "bg-danger-wash text-danger hover:bg-danger/15",
+    plain: "text-brand-dark hover:underline !px-0",
   }[variant];
+  const sizing = size === "lg" ? "rounded-xl px-5 py-3 text-[15px]" : "rounded-lg px-3.5 py-2 text-[13px]";
   return (
     <button
       type="button"
       title={title}
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex items-center justify-center gap-2 rounded-sm px-3 py-1.5 text-[13px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${styles} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${sizing} ${styles} ${className}`}
     >
       {children}
     </button>
@@ -101,15 +105,15 @@ export function Stat({ label, value, sub, tone }: { label: string; value: ReactN
 
 export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4" onClick={onClose}>
-      <div className="w-full max-w-md rounded-md bg-white shadow-xl" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
-        <div className="flex items-center justify-between border-b border-line px-5 py-3">
-          <h2 className="font-display text-base font-semibold">{title}</h2>
-          <button className="text-ink-muted hover:text-ink" onClick={onClose} aria-label="Close">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={title}>
+        <div className="flex items-center justify-between px-6 pt-5">
+          <h2 className="font-display text-[17px] font-semibold">{title}</h2>
+          <button className="grid h-7 w-7 place-items-center rounded-full bg-surface-alt text-[12px] text-ink-muted hover:text-ink" onClick={onClose} aria-label="Close">
             ✕
           </button>
         </div>
-        <div className="p-5">{children}</div>
+        <div className="px-6 pb-6 pt-3">{children}</div>
       </div>
     </div>
   );
@@ -121,5 +125,52 @@ export function Eyebrow({ children }: { children: ReactNode }) {
       <span className="h-3 w-[3px] rounded-full bg-brand" />
       {children}
     </div>
+  );
+}
+
+/** iOS-style grouped list: a quiet header, rounded rows, and a footnote. */
+export function Group({ title, footer, children }: { title?: ReactNode; footer?: ReactNode; children: ReactNode }) {
+  return (
+    <section>
+      {title && <h2 className="mb-2 px-1 text-[13px] font-semibold uppercase tracking-wide text-ink-muted">{title}</h2>}
+      <div className="divide-y divide-line/60 overflow-hidden rounded-2xl bg-white shadow-card">{children}</div>
+      {footer && <div className="mt-2 px-1 text-[13px] leading-relaxed text-ink-muted">{footer}</div>}
+    </section>
+  );
+}
+
+export function Row({ label, value, sub, right, onClick, muted }: { label: ReactNode; value?: ReactNode; sub?: ReactNode; right?: ReactNode; onClick?: () => void; muted?: boolean }) {
+  const body = (
+    <>
+      <div className="min-w-0 flex-1">
+        <div className={`text-[15px] ${muted ? "text-ink-subtle" : "text-ink"}`}>{label}</div>
+        {sub && <div className="mt-0.5 text-[13px] text-ink-muted">{sub}</div>}
+      </div>
+      {value !== undefined && <div className="max-w-[60%] text-right text-[15px] text-ink-body">{value}</div>}
+      {right}
+    </>
+  );
+  return onClick ? (
+    <button type="button" onClick={onClick} className="flex w-full items-center gap-4 px-5 py-3.5 text-left hover:bg-surface-alt/60">
+      {body}
+    </button>
+  ) : (
+    <div className="flex items-center gap-4 px-5 py-3.5">{body}</div>
+  );
+}
+
+export function Toggle({ on, onChange, disabled, label }: { on: boolean; onChange: (next: boolean) => void; disabled?: boolean; label: string }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      disabled={disabled}
+      onClick={() => onChange(!on)}
+      className={`relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors disabled:opacity-50 ${on ? "bg-positive" : "bg-surface-alt-2"}`}
+    >
+      <span className={`absolute top-[2px] h-[27px] w-[27px] rounded-full bg-white shadow transition-all ${on ? "left-[22px]" : "left-[2px]"}`} />
+    </button>
   );
 }

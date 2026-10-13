@@ -1,13 +1,14 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useCase } from "../state/store";
 import { derivePattern, type PatternView } from "../state/derive";
-import { AiBadge, Button, Card, Chip } from "../components/ui";
+import { AiBadge, Button } from "../components/ui";
 import { VolumeChart } from "../components/charts";
 import { fmtDate, inr, lakh } from "../shared/format";
 import { urlToDataUrl, type Submission } from "../lib/readReply";
 
 export default function SpikeScreen() {
   const { scenario: s, features: f, cs, trust, spikeValue } = useCase();
+  const [showChart, setShowChart] = useState(false);
   const views = s.patterns.map((p) => derivePattern(s, trust, p, cs.patterns[p.id], cs.reads[p.id], cs.decisions[p.id]));
   const waiting = views.reduce((a, v) => a + v.waiting, 0);
   const stopped = views.reduce((a, v) => a + v.stopped, 0);
@@ -15,57 +16,71 @@ export default function SpikeScreen() {
   const env = s.envelope;
   const declared = cs.declarationStatus === "submitted";
   const inside = f.volume_multiple >= env.volume_multiple_min && f.volume_multiple <= env.volume_multiple_max;
+  const open = views.filter((v) => !v.decision && v.state.status !== "submitted" && v.state.status !== "not_recognised").length;
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-4 rounded-md bg-brand px-5 py-4 text-white">
-        <div className="font-display text-3xl font-semibold">{f.volume_multiple}×</div>
-        <div className="min-w-[280px] flex-1">
-          <div className="font-display text-[17px] font-semibold">Your sales are {f.volume_multiple}× your usual level.</div>
-          <div className="text-[12px] text-white/80">
-            {f.spike_orders} orders in the last 24 hours vs about {f.baseline_orders_per_day} on a usual day
-          </div>
-        </div>
-        <Chip tone={declared && inside ? "accent" : "neutral"}>{!declared ? "No sale declared" : inside ? "Within your declared plan" : "Outside your declared plan"}</Chip>
-      </div>
+    <div className="mx-auto max-w-[720px] space-y-8 pb-6 pt-2">
+      {/* Large title: what happened, in one line */}
+      <header>
+        <p className="text-[13px] font-medium text-ink-muted">{declared && cs.declaration ? cs.declaration.sale_name : "No sale declared"} · last 24 hours</p>
+        <h1 className="mt-1 font-display text-[34px] font-semibold leading-tight tracking-tight">Your sales are {f.volume_multiple}× your usual</h1>
+        <p className="mt-1.5 text-[15px] text-ink-body">
+          {f.spike_orders} orders, against about {f.baseline_orders_per_day} on a usual day.{" "}
+          {declared && <span className={inside ? "text-positive" : "text-ink-muted"}>{inside ? "Within your plan." : "Outside your declared plan."}</span>}
+        </p>
+      </header>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
-        <div className="space-y-4">
-          <Card title="Settlement for this spike">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="text-[12px] text-ink-muted">Settling on time</div>
-                <div className="font-display text-2xl font-semibold text-positive">{lakh(onTime)}</div>
-              </div>
-              <div>
-                <div className="text-[12px] text-ink-muted">Waiting on your answers</div>
-                <div className="font-display text-2xl font-semibold text-ink">{lakh(waiting)}</div>
-              </div>
+      {/* The answer to "will I get paid?" */}
+      <section className="rounded-2xl bg-white p-6 shadow-card">
+        <div className="text-[13px] font-medium text-ink-muted">Settling on time</div>
+        <div className="mt-0.5 font-display text-[40px] font-semibold leading-none text-positive">{lakh(onTime)}</div>
+        <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-surface-alt-2">
+          <div className="h-1.5 rounded-full bg-positive" style={{ width: `${(onTime / spikeValue) * 100}%` }} />
+        </div>
+        <div className="mt-3 flex flex-wrap justify-between gap-2 text-[15px] text-ink-body">
+          <span>
+            {waiting > 0 ? (
+              <>
+                <b className="text-ink">{lakh(waiting)}</b> {open ? "waits for your answer" : "is held for now"}
+              </>
+            ) : (
+              "Nothing is waiting"
+            )}
+          </span>
+          {stopped > 0 && <span>{lakh(stopped)} stopped for cancellation</span>}
+        </div>
+      </section>
+
+      {/* Questions */}
+      <section id="questions" className="space-y-3">
+        <div className="flex items-center gap-2 px-1">
+          <h2 className="text-[13px] font-semibold uppercase tracking-wide text-ink-muted">{views.length === 1 ? "One question for you" : `${views.length} questions for you`}</h2>
+          <AiBadge kind="scripted" />
+        </div>
+        {views.map((v) => (
+          <QuestionCard key={v.pattern.id} v={v} />
+        ))}
+      </section>
+
+      {/* Detail on demand */}
+      <section>
+        <button className="px-1 text-[15px] font-semibold text-brand-dark" onClick={() => setShowChart(!showChart)}>
+          {showChart ? "Hide orders by hour ▴" : "See orders by hour ▾"}
+        </button>
+        {showChart && (
+          <div className="mt-3 rounded-2xl bg-white p-5 shadow-card">
+            <VolumeChart s={s} from={48} height={190} />
+            <div className="mt-2 flex gap-4 text-[13px] text-ink-muted">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-sm bg-brand" /> Orders
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-0 w-4 border-t-2 border-dashed border-ink" /> Your usual
+              </span>
             </div>
-            {stopped > 0 && <div className="mt-2 text-[12px] text-ink-body">Stopped for cancellation review: {lakh(stopped)}</div>}
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-alt-2">
-              <div className="h-2 bg-positive" style={{ width: `${(onTime / spikeValue) * 100}%` }} />
-            </div>
-            <p className="mt-2 text-[11px] text-ink-muted">Only the orders in question wait. Everything else pays out on the usual schedule.</p>
-          </Card>
-
-          <Card title="Orders per hour vs your usual level" right={<span className="text-[11px] text-ink-muted">last 48 hours</span>}>
-            <VolumeChart s={s} from={48} height={170} />
-          </Card>
-        </div>
-
-        <div id="questions" className="space-y-3">
-          <div className="flex items-center gap-2">
-            <h2 className="font-display text-[15px] font-semibold">
-              {views.length === 1 ? "One question" : `${views.length} questions`} about your orders
-            </h2>
-            <AiBadge kind="scripted" />
           </div>
-          {views.map((v) => (
-            <QuestionCard key={v.pattern.id} v={v} />
-          ))}
-        </div>
-      </div>
+        )}
+      </section>
     </div>
   );
 }
@@ -79,8 +94,9 @@ function QuestionCard({ v }: { v: PatternView }) {
   const [file, setFile] = useState<{ url: string; name: string } | undefined>();
   const [shipBy, setShipBy] = useState("2026-10-23");
   const [sample, setSample] = useState(false);
+  // The sample invoice's text travels with the image but stays out of the message box.
+  const [sampleText, setSampleText] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
-  const decided = !!v.decision;
 
   const submit = (sub: Submission) => {
     dispatch({ type: "answer", pattern: p.id, submission: sub });
@@ -90,7 +106,7 @@ function QuestionCard({ v }: { v: PatternView }) {
     const fx = s.invoice_fixture;
     if (!fx) return;
     setSample(true);
-    setText(fx.text_transcript);
+    setSampleText(fx.text_transcript);
     if (fx.image_path) setFile({ url: await urlToDataUrl(fx.image_path), name: fx.image_path.split("/").pop()! });
   };
   const onFile = (fl: File | undefined) => {
@@ -99,36 +115,38 @@ function QuestionCard({ v }: { v: PatternView }) {
     fr.onload = () => setFile({ url: String(fr.result), name: fl.name });
     fr.readAsDataURL(fl);
     setSample(false);
+    setSampleText("");
   };
 
   return (
-    <Card>
-      <div className="flex items-start justify-between gap-3">
-        <p className="font-display text-[15px] font-semibold leading-snug">{p.question_for_merchant}</p>
-        <span className="shrink-0 rounded-sm bg-surface-alt px-2 py-1 text-[12px] font-semibold">{lakh(p.value)}</span>
-      </div>
+    <article className="rounded-2xl bg-white p-6 shadow-card">
+      <p className="font-display text-[19px] font-semibold leading-snug">{p.question_for_merchant}</p>
+      {!p.question_for_merchant.includes(lakh(p.value)) && <p className="mt-1 text-[15px] text-ink-muted">{lakh(p.value)} of your sale is linked to this.</p>}
 
-      {decided ? (
+      {v.decision ? (
         <DecidedLines v={v} />
       ) : ps.status === "submitted" && !composing ? (
-        <div className="mt-3 rounded-md bg-positive-wash px-3 py-2 text-[13px]">
-          <b>Submitted.</b> A reviewer will confirm shortly.
-          {ps.submission?.fileName && <span className="text-ink-muted"> · {ps.submission.fileName}</span>}
-          <button className="ml-2 text-[12px] font-semibold text-brand-dark underline" onClick={() => setComposing(true)}>
-            Edit
+        <Status tone="positive" title="Sent. A reviewer will confirm shortly.">
+          {ps.submission?.fileName && <>{ps.submission.fileName} · </>}
+          <button className="font-semibold text-brand-dark" onClick={() => setComposing(true)}>
+            Edit answer
           </button>
-          {ps.edited && <div className="mt-1 text-[11px] text-ink-muted">You edited this answer; the reviewer can see both versions.</div>}
-        </div>
+          {ps.edited && <div className="mt-1 text-[13px] text-ink-muted">You edited this answer; the reviewer can see both versions.</div>}
+        </Status>
       ) : ps.status === "not_recognised" ? (
-        <div className="mt-3 rounded-md bg-surface-alt px-3 py-2 text-[13px]">Thanks. We'll stop these from settling and you can cancel before shipping.</div>
+        <Status tone="neutral" title="Thanks. We'll stop these from settling.">
+          You can cancel them before they ship.
+        </Status>
       ) : composing ? (
         p.kind === "capacity" ? (
-          <div className="mt-3 space-y-2 rounded-md border border-line p-3 text-[13px]">
-            <label className="flex items-center gap-2">
-              Ship all remaining orders by
-              <input type="date" value={shipBy} onChange={(e) => setShipBy(e.target.value)} className="rounded-sm border border-line px-2 py-1" />
+          <div className="mt-5 space-y-4">
+            <label className="block">
+              <span className="mb-1 block text-[13px] font-medium text-ink-muted">Ship all remaining orders by</span>
+              <input type="date" value={shipBy} onChange={(e) => setShipBy(e.target.value)} className="rounded-xl bg-surface-alt px-3.5 py-2.5 text-[15px] outline-none focus:ring-2 focus:ring-brand/40" />
             </label>
             <Button
+              size="lg"
+              className="w-full"
               onClick={() =>
                 submit({
                   kind: "confirm",
@@ -140,55 +158,81 @@ function QuestionCard({ v }: { v: PatternView }) {
                 })
               }
             >
-              Yes, confirm
+              Confirm
             </Button>
           </div>
         ) : (
-          <div className="mt-3 space-y-2 rounded-md border border-line p-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <Button variant="secondary" onClick={() => fileRef.current?.click()}>
-                Upload image or PDF
-              </Button>
-              <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,application/pdf" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
+          <div className="mt-5 space-y-3">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <button onClick={() => fileRef.current?.click()} className="rounded-xl bg-surface-alt px-4 py-4 text-left hover:bg-surface-alt-2">
+                <div className="text-[15px] font-semibold">Upload invoice</div>
+                <div className="text-[13px] text-ink-muted">Photo or PDF</div>
+              </button>
               {s.invoice_fixture && (
-                <Button variant="ghost" onClick={loadSample}>
-                  Use sample invoice
-                </Button>
+                <button onClick={loadSample} className="rounded-xl bg-surface-alt px-4 py-4 text-left hover:bg-surface-alt-2">
+                  <div className="text-[15px] font-semibold">Use sample invoice</div>
+                  <div className="text-[13px] text-ink-muted">For this demo</div>
+                </button>
               )}
-              {file && <span className="text-[12px] text-ink-muted">{file.name}</span>}
+              <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,application/pdf" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
             </div>
-            {file?.url.startsWith("data:image") && <img src={file.url} alt="Attached invoice" className="max-h-40 rounded-sm border border-line" />}
+            {file && (
+              <div className="flex items-center gap-3 rounded-xl bg-surface-alt p-2 pr-4">
+                {file.url.startsWith("data:image") ? <img src={file.url} alt="Attached invoice" className="h-14 w-20 rounded-lg object-cover object-top" /> : <span className="grid h-14 w-20 place-items-center rounded-lg bg-white text-[12px]">PDF</span>}
+                <span className="text-[14px] text-ink-body">{file.name}</span>
+              </div>
+            )}
             <textarea
               value={text}
-              onChange={(e) => {
-                setText(e.target.value);
-                setSample(false);
-              }}
-              placeholder="Or paste text, e.g. a WhatsApp message or PO details"
-              className="h-20 w-full rounded-sm border border-line p-2 text-[12px] outline-none focus:border-brand"
+              onChange={(e) => setText(e.target.value)}
+              placeholder={file ? "Add a note (optional)" : "Or write a short message, like you would on WhatsApp"}
+              className="h-24 w-full rounded-xl bg-surface-alt p-3.5 text-[15px] outline-none placeholder:text-ink-subtle focus:bg-white focus:ring-2 focus:ring-brand/40"
             />
-            <Button disabled={!file && !text.trim()} onClick={() => submit({ kind: file ? "invoice" : "text", text, fileDataUrl: file?.url, fileName: file?.name, sample })}>
-              Submit answer
+            <Button size="lg" className="w-full" disabled={!file && !text.trim()} onClick={() => submit({ kind: file ? "invoice" : "text", text: [sampleText, text.trim()].filter(Boolean).join("\n"), fileDataUrl: file?.url, fileName: file?.name, sample: sample && !text.trim() })}>
+              Send answer
             </Button>
+            <button className="w-full text-center text-[15px] text-ink-muted" onClick={() => setComposing(false)}>
+              Cancel
+            </button>
           </div>
         )
       ) : (
         <>
-          {ps.status === "later" && <div className="mt-3 rounded-md bg-surface-alt px-3 py-2 text-[12px]">{lakh(v.waiting)} stays held until this is answered. The rest settles normally.</div>}
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button onClick={() => setComposing(true)}>{p.kind === "capacity" ? "Yes, set a ship date" : "Yes, attach proof"}</Button>
-            <Button variant="secondary" onClick={() => dispatch({ type: "patternStatus", pattern: p.id, status: "not_recognised" })}>
+          {ps.status === "later" && (
+            <Status tone="neutral" title={`${lakh(v.waiting)} stays held until you answer.`}>
+              The rest of your sale settles normally.
+            </Status>
+          )}
+          <Button size="lg" className="mt-5 w-full" onClick={() => setComposing(true)}>
+            {p.kind === "capacity" ? "Yes, set a ship date" : "Yes, attach proof"}
+          </Button>
+          <div className="mt-3 flex justify-center gap-6 text-[15px]">
+            <button className="font-medium text-ink-body hover:text-ink" onClick={() => dispatch({ type: "patternStatus", pattern: p.id, status: "not_recognised" })}>
               Don't recognise these orders
-            </Button>
+            </button>
             {ps.status !== "later" && (
-              <Button variant="ghost" onClick={() => dispatch({ type: "patternStatus", pattern: p.id, status: "later" })}>
+              <button className="font-medium text-ink-muted hover:text-ink" onClick={() => dispatch({ type: "patternStatus", pattern: p.id, status: "later" })}>
                 Answer later
-              </Button>
+              </button>
             )}
           </div>
         </>
       )}
-    </Card>
+    </article>
+  );
+}
+
+function Status({ tone, title, children }: { tone: "positive" | "neutral"; title: string; children?: ReactNode }) {
+  return (
+    <div className={`mt-5 flex gap-3 rounded-xl px-4 py-3 ${tone === "positive" ? "bg-positive-wash" : "bg-surface-alt"}`}>
+      <span className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full text-[11px] font-bold text-white ${tone === "positive" ? "bg-positive" : "bg-ink-subtle"}`}>
+        {tone === "positive" ? "✓" : "i"}
+      </span>
+      <div className="text-[15px]">
+        <div className="font-semibold text-ink">{title}</div>
+        {children && <div className="mt-0.5 text-ink-body">{children}</div>}
+      </div>
+    </div>
   );
 }
 
@@ -199,32 +243,21 @@ function DecidedLines({ v }: { v: PatternView }) {
   const unmatched = v.run?.unmatchedValue ?? 0;
   const showFollowUp = p.follow_up_question && unmatched > 0 && d.kind !== "override";
   return (
-    <div className="mt-3 space-y-2 text-[13px]">
-      <div className="rounded-md bg-positive-wash px-3 py-2">
-        {d.releaseNow > 0 ? (
-          <>
-            Released <b>{inr(d.releaseNow)}</b> today.{" "}
-          </>
-        ) : null}
-        {d.reserve > 0 ? (
-          <>
-            <b>{inr(d.reserve)}</b> held until {fmtDate(d.reserveUntil)}.
-          </>
-        ) : (
-          <>Nothing from these orders is held.</>
-        )}
-      </div>
+    <>
+      <Status tone={d.releaseNow > 0 || d.reserve === 0 ? "positive" : "neutral"} title={d.releaseNow > 0 ? `${inr(d.releaseNow)} released today` : d.reserve > 0 ? "Still under review" : "All clear"}>
+        {d.reserve > 0 ? `${inr(d.reserve)} is held until ${fmtDate(d.reserveUntil)}.` : "Nothing from these orders is held."}
+      </Status>
       {showFollowUp && (
-        <div className="rounded-md border border-brand/30 bg-brand-wash p-3">
+        <div className="mt-3 rounded-xl border border-brand/20 bg-brand-wash/60 p-4">
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-dark">Follow-up</span>
+            <span className="text-[13px] font-semibold uppercase tracking-wide text-brand-dark">One more thing</span>
             <AiBadge kind="scripted" />
           </div>
-          <p className="mt-1 font-semibold">{p.follow_up_question!.replace("{unmatched}", inr(unmatched))}</p>
+          <p className="mt-1 text-[16px] font-semibold">{p.follow_up_question!.replace("{unmatched}", inr(unmatched))}</p>
           {v.state.followUp ? (
-            <div className="mt-2 text-[12px] text-ink-body">{v.state.followUp === "answered" ? "Submitted. A reviewer will confirm shortly." : "Thanks. That payment stays out of settlement while we check it."}</div>
+            <div className="mt-2 text-[14px] text-ink-body">{v.state.followUp === "answered" ? "Sent. A reviewer will confirm shortly." : "Thanks. That payment stays out of settlement while we check it."}</div>
           ) : (
-            <div className="mt-2 flex gap-2">
+            <div className="mt-3 flex gap-2">
               <Button onClick={() => dispatch({ type: "followUp", pattern: p.id, answer: "answered" })}>Yes, same order</Button>
               <Button variant="secondary" onClick={() => dispatch({ type: "followUp", pattern: p.id, answer: "not_recognised" })}>
                 Don't recognise it
@@ -233,6 +266,6 @@ function DecidedLines({ v }: { v: PatternView }) {
           )}
         </div>
       )}
-    </div>
+    </>
   );
 }

@@ -51,6 +51,7 @@ type Action =
   | { type: "scenario"; id: ScenarioId }
   | { type: "screen"; screen: Screen }
   | { type: "withdraw"; source: SourceId }
+  | { type: "share"; source: SourceId }
   | { type: "stopSharing" }
   | { type: "declEdit"; declaration?: Declaration }
   | { type: "declChange"; declaration: Declaration }
@@ -111,6 +112,10 @@ function reducer(state: State, action: Action): State {
     case "withdraw": {
       const name = merchant.sources.find((x) => x.id === action.source)?.name ?? action.source;
       return { ...patch({ sourceStatus: { ...cur.sourceStatus, [action.source]: "withdrawn" } }), log: [log("consent", `Merchant withdrew consent for ${name}. Its data was deleted for this sale.`), ...state.log] };
+    }
+    case "share": {
+      const name = merchant.sources.find((x) => x.id === action.source)?.name ?? action.source;
+      return { ...patch({ sourceStatus: { ...cur.sourceStatus, [action.source]: "shared" } }), log: [log("consent", `Merchant shared ${name} for this sale.`), ...state.log] };
     }
     case "stopSharing": {
       const next = { ...cur.sourceStatus };
