@@ -1,8 +1,8 @@
-// Eval scorecard (PRD v0.3, C5). Analyst view only. Reads the saved results file;
+// Eval scorecard (PRD v0.3, C5). Analyst view only. Reads the saved results files;
 // evals never run from the browser.
 import { useState } from "react";
-import results from "../data/evals/results.json";
 import { Card, Chip } from "../components/ui";
+import DecisionEvals from "./DecisionEvals";
 import { CHECK_SHORT } from "../shared/checks";
 import { inr } from "../shared/format";
 
@@ -50,7 +50,17 @@ interface Row {
   injection_flagged: boolean;
   failed_checks: string[];
 }
-const data = results as unknown as { summary: Summary; rows: Row[] };
+type Run = { summary: Summary; rows: Row[] };
+// One file per reader: results.json (live API run), results-session.json (Claude in a Claude
+// Code session, no API call), results-basic.json (basic local parser).
+const FILES = import.meta.glob<Run>("../data/evals/results*.json", { eager: true, import: "default" });
+const RUNS = Object.entries(FILES)
+  .sort(([x], [y]) => ORDER(x) - ORDER(y))
+  .map(([file, run]) => ({ file: file.split("/").pop()!, run }));
+function ORDER(file: string) {
+  return file.endsWith("results.json") ? 0 : file.includes("session") ? 1 : 2;
+}
+const runLabel = (s: Summary) => (s.extractor === "live model" ? `Live API: ${s.model}` : s.extractor.startsWith("Claude") ? "Claude (session, no API)" : "Basic local parser");
 
 function Tile({ label, value, sub, bad, good }: { label: string; value: string; sub?: string; bad?: boolean; good?: boolean }) {
   return (
@@ -63,17 +73,45 @@ function Tile({ label, value, sub, bad, good }: { label: string; value: string; 
 }
 
 export default function EvalsPanel() {
-  const s = data.summary;
-  const rows = data.rows;
+  return (
+    <div className="space-y-6">
+      <DecisionEvals />
+      <ReadingEvals />
+    </div>
+  );
+}
+
+/** Eval 4 in detail: the 48 reply-reading cases, per reader. */
+function ReadingEvals() {
+  const [pick, setPick] = useState(0);
+  const { run } = RUNS[Math.min(pick, RUNS.length - 1)];
+  const s = run.summary;
+  const rows = run.rows;
   const [open, setOpen] = useState<string | null>(null);
   const live = s.extractor === "live model";
+  const session = s.extractor.startsWith("Claude");
   const runDate = new Date(s.run_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" id="reading-evals">
       <div className="flex flex-wrap items-center gap-2">
-        <h2 className="font-display text-[15px] font-semibold">Reply-reading evals</h2>
-        <Chip tone={live ? "positive" : "warn"}>{live ? `Live model: ${s.model}` : "Basic local parser (no API key): re-run live with npm run evals"}</Chip>
+        <h2 className="font-display text-[15px] font-semibold">Eval 4 detail: reply reading, 48 cases</h2>
+        <div className="flex rounded-[10px] bg-surface-alt-2/70 p-0.5" role="tablist" aria-label="Reader">
+          {RUNS.map((r, i) => (
+            <button
+              key={r.file}
+              role="tab"
+              aria-selected={i === pick}
+              onClick={() => setPick(i)}
+              className={`rounded-lg px-3 py-1 text-[12px] font-medium ${i === pick ? "bg-white text-ink shadow-sm" : "text-ink-muted hover:text-ink"}`}
+            >
+              {runLabel(r.run.summary)}
+            </button>
+          ))}
+        </div>
+        <Chip tone={live ? "positive" : session ? "neutral" : "warn"}>
+          {live ? `Live API run: ${s.model}` : session ? "Claude in a Claude Code session, same prompt and schema, no API call: no latency or cost" : "Basic local parser (no API key)"}
+        </Chip>
       </div>
 
       <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
@@ -87,7 +125,7 @@ export default function EvalsPanel() {
         />
         <Tile label="Field accuracy" value={pct(s.field_accuracy)} sub="buyer, GSTIN, total, quantity" />
         <Tile label="False holds" value={String(s.false_holds)} sub={s.false_hold_ids.length ? s.false_hold_ids.join(", ") : "held less than allowed"} />
-        <Tile label="Median latency" value={s.latency_ms.median === null ? "n/a" : `${s.latency_ms.median} ms`} sub={`p95 ${s.latency_ms.p95 ?? "n/a"} ms`} />
+        <Tile label="Median latency" value={s.latency_ms.median === null ? "n/a" : `${s.latency_ms.median} ms`} sub={s.latency_ms.median === null ? "not measured: no API call" : `p95 ${s.latency_ms.p95 ?? "n/a"} ms`} />
         <Tile
           label="Cost per call"
           value={s.cost_per_call_usd === null ? "n/a" : `$${s.cost_per_call_usd.toFixed(4)}`}
@@ -114,8 +152,8 @@ export default function EvalsPanel() {
         </table>
       </Card>
 
-      <p className="sticky bottom-0 border-t border-line bg-surface-alt py-2 text-[11px] text-ink-muted">
-        {s.cases} synthetic cases, text replies only. Run on {runDate} with {live ? s.model : "the basic local parser (no API key)"}. Production evals would use labelled past holds and shadow mode.
+      <p className="border-t border-line py-2 text-[11px] text-ink-muted">
+        {s.cases} synthetic cases, text replies only. Run on {runDate} with {live ? s.model : session ? "Claude in a Claude Code session (no API call)" : "the basic local parser (no API key)"}. A live API run (npm run evals with ANTHROPIC_API_KEY) adds latency and cost. Production evals would use labelled past holds and shadow mode.
       </p>
     </div>
   );

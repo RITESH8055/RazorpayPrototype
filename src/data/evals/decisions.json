@@ -1,0 +1,860 @@
+{
+  "run_at": "2026-10-13T09:38:31.799Z",
+  "seed": 202,
+  "seed_role": "test (thresholds frozen before this seed was scored)",
+  "scope": "Synthetic cases written by the prototype team. They test the decision logic against stated archetypes; they are not an estimate of real fraud rates.",
+  "evals": [
+    {
+      "n": 1,
+      "name": "Spike vs risk",
+      "grader": "Code",
+      "bar": "Beats the fixed rule on false holds without missing more risk",
+      "pass": true,
+      "result": {
+        "cases": 400,
+        "good": 236,
+        "risky": 164,
+        "screen": {
+          "good_wrongly_held": 49,
+          "good_wrongly_held_full_hold": 3,
+          "good_value_held": 89098366,
+          "risky_missed": 2
+        },
+        "fixed_rule": {
+          "label": "Hold the whole day if volume exceeds 3× the 30-day average",
+          "good_wrongly_held": 173,
+          "good_value_held": 647220696,
+          "risky_missed": 45
+        },
+        "by_archetype": [
+          {
+            "archetype": "declared_festive",
+            "risky": false,
+            "cases": 97,
+            "settle": 92,
+            "ask": 5,
+            "hold": 0,
+            "rule_holds": 87
+          },
+          {
+            "archetype": "undeclared_viral",
+            "risky": false,
+            "cases": 45,
+            "settle": 38,
+            "ask": 7,
+            "hold": 0,
+            "rule_holds": 45
+          },
+          {
+            "archetype": "bust_out",
+            "risky": true,
+            "cases": 57,
+            "settle": 0,
+            "ask": 9,
+            "hold": 48,
+            "rule_holds": 57
+          },
+          {
+            "archetype": "established_seasonal",
+            "risky": false,
+            "cases": 41,
+            "settle": 39,
+            "ask": 2,
+            "hold": 0,
+            "rule_holds": 30
+          },
+          {
+            "archetype": "quiet_growth",
+            "risky": false,
+            "cases": 20,
+            "settle": 18,
+            "ask": 2,
+            "hold": 0,
+            "rule_holds": 0
+          },
+          {
+            "archetype": "refund_abuse",
+            "risky": true,
+            "cases": 35,
+            "settle": 0,
+            "ask": 0,
+            "hold": 35,
+            "rule_holds": 23
+          },
+          {
+            "archetype": "genuine_bulk_order",
+            "risky": false,
+            "cases": 33,
+            "settle": 0,
+            "ask": 30,
+            "hold": 3,
+            "rule_holds": 11
+          },
+          {
+            "archetype": "slow_bust_out",
+            "risky": true,
+            "cases": 32,
+            "settle": 2,
+            "ask": 16,
+            "hold": 14,
+            "rule_holds": 0
+          },
+          {
+            "archetype": "cross_border_burst",
+            "risky": true,
+            "cases": 40,
+            "settle": 0,
+            "ask": 1,
+            "hold": 39,
+            "rule_holds": 39
+          }
+        ],
+        "missed_ids": [
+          "s281 slow_bust_out",
+          "s362 slow_bust_out"
+        ]
+      }
+    },
+    {
+      "n": 2,
+      "name": "Reserve sizing",
+      "grader": "Code",
+      "bar": "Reserve at or above expected exposure on every risky case",
+      "pass": false,
+      "result": {
+        "risky_cases": 164,
+        "covered": 137,
+        "shortfall_cases": [
+          {
+            "id": "s015",
+            "archetype": "slow_bust_out",
+            "decision": "ask",
+            "reserve": 193236,
+            "exposure": 875636,
+            "gap": 682400
+          },
+          {
+            "id": "s025",
+            "archetype": "bust_out",
+            "decision": "ask",
+            "reserve": 1469715,
+            "exposure": 4776768,
+            "gap": 3307053
+          },
+          {
+            "id": "s039",
+            "archetype": "slow_bust_out",
+            "decision": "ask",
+            "reserve": 361786,
+            "exposure": 700437,
+            "gap": 338651
+          },
+          {
+            "id": "s056",
+            "archetype": "slow_bust_out",
+            "decision": "ask",
+            "reserve": 71984,
+            "exposure": 270177,
+            "gap": 198193
+          },
+          {
+            "id": "s072",
+            "archetype": "bust_out",
+            "decision": "ask",
+            "reserve": 13390770,
+            "exposure": 34050909,
+            "gap": 20660139
+          },
+          {
+            "id": "s075",
+            "archetype": "slow_bust_out",
+            "decision": "ask",
+            "reserve": 352901,
+            "exposure": 1237823,
+            "gap": 884922
+          },
+          {
+            "id": "s089",
+            "archetype": "slow_bust_out",
+            "decision": "ask",
+            "reserve": 102874,
+            "exposure": 379801,
+            "gap": 276927
+          },
+          {
+            "id": "s090",
+            "archetype": "bust_out",
+            "decision": "ask",
+            "reserve": 2330406,
+            "exposure": 7725983,
+            "gap": 5395577
+          },
+          {
+            "id": "s142",
+            "archetype": "slow_bust_out",
+            "decision": "ask",
+            "reserve": 69021,
+            "exposure": 571431,
+            "gap": 502410
+          },
+          {
+            "id": "s143",
+            "archetype": "bust_out",
+            "decision": "ask",
+            "reserve": 1847893,
+            "exposure": 8908328,
+            "gap": 7060435
+          },
+          {
+            "id": "s214",
+            "archetype": "slow_bust_out",
+            "decision": "ask",
+            "reserve": 1160195,
+            "exposure": 2606130,
+            "gap": 1445935
+          },
+          {
+            "id": "s217",
+            "archetype": "slow_bust_out",
+            "decision": "ask",
+            "reserve": 428081,
+            "exposure": 1762087,
+            "gap": 1334006
+          },
+          {
+            "id": "s257",
+            "archetype": "bust_out",
+            "decision": "ask",
+            "reserve": 480403,
+            "exposure": 1684620,
+            "gap": 1204217
+          },
+          {
+            "id": "s260",
+            "archetype": "bust_out",
+            "decision": "ask",
+            "reserve": 1491252,
+            "exposure": 3120619,
+            "gap": 1629367
+          },
+          {
+            "id": "s274",
+            "archetype": "slow_bust_out",
+            "decision": "ask",
+            "reserve": 1141483,
+            "exposure": 2293513,
+            "gap": 1152030
+          },
+          {
+            "id": "s281",
+            "archetype": "slow_bust_out",
+            "decision": "settle",
+            "reserve": 0,
+            "exposure": 326868,
+            "gap": 326868
+          },
+          {
+            "id": "s289",
+            "archetype": "slow_bust_out",
+            "decision": "ask",
+            "reserve": 131624,
+            "exposure": 324593,
+            "gap": 192969
+          },
+          {
+            "id": "s290",
+            "archetype": "bust_out",
+            "decision": "ask",
+            "reserve": 776713,
+            "exposure": 1321817,
+            "gap": 545104
+          },
+          {
+            "id": "s296",
+            "archetype": "slow_bust_out",
+            "decision": "ask",
+            "reserve": 470895,
+            "exposure": 1874763,
+            "gap": 1403868
+          },
+          {
+            "id": "s300",
+            "archetype": "slow_bust_out",
+            "decision": "ask",
+            "reserve": 534737,
+            "exposure": 1292932,
+            "gap": 758195
+          },
+          {
+            "id": "s319",
+            "archetype": "slow_bust_out",
+            "decision": "ask",
+            "reserve": 51106,
+            "exposure": 372799,
+            "gap": 321693
+          },
+          {
+            "id": "s323",
+            "archetype": "slow_bust_out",
+            "decision": "ask",
+            "reserve": 410473,
+            "exposure": 1423016,
+            "gap": 1012543
+          },
+          {
+            "id": "s331",
+            "archetype": "slow_bust_out",
+            "decision": "ask",
+            "reserve": 92557,
+            "exposure": 502683,
+            "gap": 410126
+          },
+          {
+            "id": "s360",
+            "archetype": "bust_out",
+            "decision": "ask",
+            "reserve": 1542545,
+            "exposure": 3198929,
+            "gap": 1656384
+          },
+          {
+            "id": "s362",
+            "archetype": "slow_bust_out",
+            "decision": "settle",
+            "reserve": 0,
+            "exposure": 296574,
+            "gap": 296574
+          },
+          {
+            "id": "s365",
+            "archetype": "slow_bust_out",
+            "decision": "ask",
+            "reserve": 73119,
+            "exposure": 149257,
+            "gap": 76138
+          },
+          {
+            "id": "s373",
+            "archetype": "bust_out",
+            "decision": "ask",
+            "reserve": 2923316,
+            "exposure": 10993100,
+            "gap": 8069784
+          }
+        ],
+        "total_exposure": 527375077,
+        "total_reserve_on_risky": 819539520,
+        "uncovered_exposure": 61142508,
+        "clean_value_settled_on_time": 0.8812038104511263,
+        "clean_value_reserved": 67845430
+      }
+    },
+    {
+      "n": 3,
+      "name": "Question quality",
+      "grader": "Code checks + LLM judge + 20 checked by you",
+      "bar": "90% pass on rubric",
+      "pass": true,
+      "result": {
+        "distinct_questions": 10,
+        "questions_shown": 215,
+        "code_pass": 10,
+        "judge": {
+          "name": "Claude subagent in a Claude Code session (no API call), rubric in evals/judge/README.md",
+          "judged": 10,
+          "pass": 9
+        },
+        "judge_pass_rate_weighted": 0.9953488372093023,
+        "judge_round1": {
+          "pass": 7,
+          "judged": 10,
+          "failed": [
+            {
+              "id": "q02",
+              "note": "Fails pattern_level because it asks about one individual ₹84,000 transaction (whether it belongs to the order), even though the tone is neutral and naming the company 'Veda' is business, not personal, data."
+            },
+            {
+              "id": "q05",
+              "note": "Referencing the merchant's 'filed turnover' sounds like a tax/compliance check and can imply under-reporting, so it may feel accusatory; 'one-off sale' is also ambiguous (a single transaction or a single sale event)."
+            },
+            {
+              "id": "q06",
+              "note": "Under 30 words and neutral, but the ask is not clear: saying 884 orders 'came from a few buyers' and then asking if it is 'one bulk or corporate order' is internally contradictory and confusing to read on a phone."
+            }
+          ]
+        },
+        "human": {
+          "sheet": "evals/judge/questions-human-review.csv",
+          "marked": 0,
+          "pass": 0
+        },
+        "rows": [
+          {
+            "id": "q01",
+            "template": "These 7 payments (₹X) from Veda Consulting: is this a corporate gifting order?",
+            "example": "These 7 payments (₹5.88 lakh) from Veda Consulting: is this a corporate gifting order?",
+            "uses": 1,
+            "sources": [
+              "app scenario A"
+            ],
+            "words": 14,
+            "pii": [],
+            "checks": {
+              "short": true,
+              "one_question": true,
+              "non_accusatory_words": true,
+              "no_personal_data_patterns": true
+            },
+            "code_pass": true,
+            "judge": {
+              "pass": true,
+              "pattern_level": true,
+              "short": true,
+              "non_accusatory": true,
+              "no_personal_data": true,
+              "note": "Asks about a group of 7 payments with a neutral, plausible explanation; naming the business buyer 'Veda Consulting' is a company, not a natural person, so I do not count it as customer personal data, though a sole-proprietor trade name could be borderline."
+            }
+          },
+          {
+            "id": "q02",
+            "template": "One more ₹X payment from Veda isn't on this invoice. Is it part of the same order?",
+            "example": "One more ₹84,000 payment from Veda isn't on this invoice. Is it part of the same order?",
+            "uses": 1,
+            "sources": [
+              "app scenario A follow-up"
+            ],
+            "words": 17,
+            "pii": [],
+            "checks": {
+              "short": true,
+              "one_question": true,
+              "non_accusatory_words": true,
+              "no_personal_data_patterns": true
+            },
+            "code_pass": true,
+            "judge": {
+              "pass": false,
+              "pattern_level": false,
+              "short": true,
+              "non_accusatory": true,
+              "no_personal_data": true,
+              "note": "Fails pattern_level because it asks about one individual ₹84,000 transaction (whether it belongs to the order), even though the tone is neutral and naming the company 'Veda' is business, not personal, data."
+            }
+          },
+          {
+            "id": "q03",
+            "template": "Orders jumped N× after a reel. Can you ship the remaining orders by Friday?",
+            "example": "Orders jumped 6× after a reel. Can you ship the remaining orders by Friday?",
+            "uses": 1,
+            "sources": [
+              "app scenario B"
+            ],
+            "words": 14,
+            "pii": [],
+            "checks": {
+              "short": true,
+              "one_question": true,
+              "non_accusatory_words": true,
+              "no_personal_data_patterns": true
+            },
+            "code_pass": true,
+            "judge": {
+              "pass": true,
+              "pattern_level": true,
+              "short": true,
+              "non_accusatory": true,
+              "no_personal_data": true,
+              "note": "Pattern-level and neutral, but borderline: asking the merchant to commit to shipping 'by Friday' reads a little like a demand and hints at doubt about fulfilment, and 'remaining orders' is vague."
+            }
+          },
+          {
+            "id": "q04",
+            "template": "These N orders (₹X): is this one bulk buyer?",
+            "example": "These 140 orders (₹57.8 lakh): is this one bulk buyer?",
+            "uses": 1,
+            "sources": [
+              "app scenario C"
+            ],
+            "words": 10,
+            "pii": [],
+            "checks": {
+              "short": true,
+              "one_question": true,
+              "non_accusatory_words": true,
+              "no_personal_data_patterns": true
+            },
+            "code_pass": true,
+            "judge": {
+              "pass": true,
+              "pattern_level": true,
+              "short": true,
+              "non_accusatory": true,
+              "no_personal_data": true,
+              "note": "Clear, short, neutral question about a cluster of 140 orders with no customer identifiers."
+            }
+          },
+          {
+            "id": "q05",
+            "template": "Sales this week are much higher than usual for your business. Is this a planned sale or event?",
+            "example": "Sales this week are much higher than usual for your business. Is this a planned sale or event?",
+            "uses": 15,
+            "sources": [
+              "s002 undeclared_viral",
+              "s004 established_seasonal",
+              "s009 quiet_growth"
+            ],
+            "words": 18,
+            "pii": [],
+            "checks": {
+              "short": true,
+              "one_question": true,
+              "non_accusatory_words": true,
+              "no_personal_data_patterns": true
+            },
+            "code_pass": true,
+            "judge": {
+              "pass": true,
+              "pattern_level": true,
+              "short": true,
+              "non_accusatory": true,
+              "no_personal_data": true,
+              "note": "Revised wording drops the filed-turnover reference and asks a neutral, clear question about a weekly sales pattern with benign options (planned sale or event); no customer data."
+            }
+          },
+          {
+            "id": "q06",
+            "template": "These N orders (₹X) look like one large purchase. Is this a bulk or corporate order?",
+            "example": "These 884 orders (₹33.0 lakh) look like one large purchase. Is this a bulk or corporate order?",
+            "uses": 120,
+            "sources": [
+              "s003 bust_out",
+              "s010 genuine_bulk_order",
+              "s013 bust_out"
+            ],
+            "words": 17,
+            "pii": [],
+            "checks": {
+              "short": true,
+              "one_question": true,
+              "non_accusatory_words": true,
+              "no_personal_data_patterns": true
+            },
+            "code_pass": true,
+            "judge": {
+              "pass": true,
+              "pattern_level": true,
+              "short": true,
+              "non_accusatory": true,
+              "no_personal_data": true,
+              "note": "The contradiction is gone and the ask is clear and neutral; it is slightly odd to call 884 orders one large purchase, but corporate gifting makes that plausible and a merchant would understand it."
+            }
+          },
+          {
+            "id": "q07",
+            "template": "Refunds are higher than usual this week. What changed: a product issue, or a new returns policy?",
+            "example": "Refunds are higher than usual this week. What changed: a product issue, or a new returns policy?",
+            "uses": 35,
+            "sources": [
+              "s007 refund_abuse",
+              "s014 refund_abuse",
+              "s017 refund_abuse"
+            ],
+            "words": 17,
+            "pii": [],
+            "checks": {
+              "short": true,
+              "one_question": true,
+              "non_accusatory_words": true,
+              "no_personal_data_patterns": true
+            },
+            "code_pass": true,
+            "judge": {
+              "pass": true,
+              "pattern_level": true,
+              "short": true,
+              "non_accusatory": true,
+              "no_personal_data": true,
+              "note": "Neutral, pattern-level question offering benign explanations; the colon phrasing is slightly awkward and the two options may not cover every reason, but it still reads well."
+            }
+          },
+          {
+            "id": "q08",
+            "template": "Some orders (₹X) were paid with cards issued outside India. Are you selling abroad for this sale?",
+            "example": "Some orders (₹33.7 lakh) were paid with cards issued outside India. Are you selling abroad for this sale?",
+            "uses": 39,
+            "sources": [
+              "s021 cross_border_burst",
+              "s027 cross_border_burst",
+              "s046 cross_border_burst"
+            ],
+            "words": 18,
+            "pii": [],
+            "checks": {
+              "short": true,
+              "one_question": true,
+              "non_accusatory_words": true,
+              "no_personal_data_patterns": true
+            },
+            "code_pass": true,
+            "judge": {
+              "pass": true,
+              "pattern_level": true,
+              "short": true,
+              "non_accusatory": true,
+              "no_personal_data": true,
+              "note": "Aggregate statement about foreign-issued cards with a friendly ask; no card identifiers, though 'for this sale' assumes a sale is running."
+            }
+          },
+          {
+            "id": "q09",
+            "template": "Many orders came in late at night. Did you run a midnight offer?",
+            "example": "Many orders came in late at night. Did you run a midnight offer?",
+            "uses": 1,
+            "sources": [
+              "s088 cross_border_burst"
+            ],
+            "words": 13,
+            "pii": [],
+            "checks": {
+              "short": true,
+              "one_question": true,
+              "non_accusatory_words": true,
+              "no_personal_data_patterns": true
+            },
+            "code_pass": true,
+            "judge": {
+              "pass": true,
+              "pattern_level": true,
+              "short": true,
+              "non_accusatory": true,
+              "no_personal_data": true,
+              "note": "Short, friendly, pattern-level question with a plausible benign explanation."
+            }
+          },
+          {
+            "id": "q10",
+            "template": "Orders are N× your usual (₹X above a normal day). Are you running a sale?",
+            "example": "Orders are 8.7× your usual (₹90.9 lakh above a normal day). Are you running a sale?",
+            "uses": 1,
+            "sources": [
+              "s154 undeclared_viral"
+            ],
+            "words": 16,
+            "pii": [],
+            "checks": {
+              "short": true,
+              "one_question": true,
+              "non_accusatory_words": true,
+              "no_personal_data_patterns": true
+            },
+            "code_pass": true,
+            "judge": {
+              "pass": true,
+              "pattern_level": true,
+              "short": true,
+              "non_accusatory": true,
+              "no_personal_data": true,
+              "note": "Clear and neutral; mixing a multiplier with an absolute rupee delta in parentheses is slightly dense but readable."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "n": 4,
+      "name": "Answer reading + Try to fool it",
+      "grader": "Code",
+      "bar": "Fooled rate reported, zero money moved by text",
+      "pass": true,
+      "result": {
+        "runs": [
+          {
+            "extractor": "Claude in a Claude Code session (no API call)",
+            "adversarial_cases": 28,
+            "fooled_into_release": 0,
+            "injection_cases": 8,
+            "extraction_moved_by_injection": [],
+            "injection_flagged": 8,
+            "money_released_by_text_inr": 0,
+            "field_accuracy": 0.9895833333333334
+          },
+          {
+            "extractor": "basic local parser (no API key)",
+            "adversarial_cases": 28,
+            "fooled_into_release": 0,
+            "injection_cases": 8,
+            "extraction_moved_by_injection": [],
+            "injection_flagged": 8,
+            "money_released_by_text_inr": 0,
+            "field_accuracy": 0.9375
+          }
+        ],
+        "fool_presets": {
+          "attempts": 50,
+          "released_above_first_inr": 0,
+          "raw_above_first_before_cap": 3
+        }
+      }
+    },
+    {
+      "n": 5,
+      "name": "Hard guardrails",
+      "grader": "Code",
+      "bar": "100%, no exceptions",
+      "pass": true,
+      "result": {
+        "ceiling": {
+          "checked": 18600,
+          "failed": []
+        },
+        "review": {
+          "checked": 186,
+          "failed": []
+        },
+        "consent": {
+          "checked": 3200,
+          "failed": []
+        },
+        "app_consent": {
+          "checked": 3,
+          "failed": []
+        }
+      }
+    },
+    {
+      "n": 6,
+      "name": "Learning loop",
+      "grader": "Code",
+      "bar": "Ramp and reset at the right sale",
+      "pass": true,
+      "result": [
+        {
+          "sale": "Republic Day",
+          "days": 25,
+          "delivered": 200,
+          "disputes": 0.2,
+          "pattern_change": false,
+          "expect": {
+            "level": "New",
+            "discount": 0,
+            "review": false
+          },
+          "got": {
+            "level": "New",
+            "discount": 0,
+            "review": false
+          },
+          "pass": true
+        },
+        {
+          "sale": "Holi",
+          "days": 45,
+          "delivered": 600,
+          "disputes": 0.2,
+          "pattern_change": false,
+          "expect": {
+            "level": "Building",
+            "discount": 0.25,
+            "review": false
+          },
+          "got": {
+            "level": "Building",
+            "discount": 0.25,
+            "review": false
+          },
+          "pass": true
+        },
+        {
+          "sale": "Summer",
+          "days": 80,
+          "delivered": 2100,
+          "disputes": 0.3,
+          "pattern_change": false,
+          "expect": {
+            "level": "Building",
+            "discount": 0.25,
+            "review": false
+          },
+          "got": {
+            "level": "Building",
+            "discount": 0.25,
+            "review": false
+          },
+          "pass": true
+        },
+        {
+          "sale": "Monsoon",
+          "days": 100,
+          "delivered": 5600,
+          "disputes": 0.3,
+          "pattern_change": false,
+          "expect": {
+            "level": "Trusted",
+            "discount": 0.5,
+            "review": false
+          },
+          "got": {
+            "level": "Trusted",
+            "discount": 0.5,
+            "review": false
+          },
+          "pass": true
+        },
+        {
+          "sale": "Independence Day",
+          "days": 120,
+          "delivered": 7200,
+          "disputes": 0.3,
+          "pattern_change": true,
+          "expect": {
+            "level": "Trusted",
+            "discount": 0,
+            "review": true
+          },
+          "got": {
+            "level": "Trusted",
+            "discount": 0,
+            "review": true
+          },
+          "pass": true
+        },
+        {
+          "sale": "Navratri",
+          "days": 150,
+          "delivered": 8000,
+          "disputes": 0.8,
+          "pattern_change": false,
+          "expect": {
+            "level": "New",
+            "discount": 0,
+            "review": false
+          },
+          "got": {
+            "level": "New",
+            "discount": 0,
+            "review": false
+          },
+          "pass": true
+        },
+        {
+          "sale": "Diwali",
+          "days": 200,
+          "delivered": 12500,
+          "disputes": 0.4,
+          "pattern_change": false,
+          "expect": {
+            "level": "Trusted",
+            "discount": 0.5,
+            "review": false
+          },
+          "got": {
+            "level": "Trusted",
+            "discount": 0.5,
+            "review": false
+          },
+          "pass": true
+        }
+      ]
+    }
+  ]
+}

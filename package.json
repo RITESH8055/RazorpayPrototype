@@ -12,7 +12,8 @@
     "data": "node scripts/generate-data.mjs",
     "preview": "vite preview",
     "test": "tsx scripts/check-logic.ts",
-    "evals": "tsx scripts/run-evals.ts"
+    "evals": "tsx scripts/run-evals.ts",
+    "evals:decisions": "tsx scripts/run-decision-evals.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",

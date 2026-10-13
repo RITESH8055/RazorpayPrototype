@@ -1,0 +1,85 @@
+{
+  "judge": "Claude subagent in a Claude Code session (no API call), rubric in evals/judge/README.md",
+  "verdicts": {
+    "q01": {
+      "pass": true,
+      "pattern_level": true,
+      "short": true,
+      "non_accusatory": true,
+      "no_personal_data": true,
+      "note": "Asks about a group of 7 payments with a neutral, plausible explanation; naming the business buyer 'Veda Consulting' is a company, not a natural person, so I do not count it as customer personal data, though a sole-proprietor trade name could be borderline."
+    },
+    "q02": {
+      "pass": false,
+      "pattern_level": false,
+      "short": true,
+      "non_accusatory": true,
+      "no_personal_data": true,
+      "note": "Fails pattern_level because it asks about one individual ₹84,000 transaction (whether it belongs to the order), even though the tone is neutral and naming the company 'Veda' is business, not personal, data."
+    },
+    "q03": {
+      "pass": true,
+      "pattern_level": true,
+      "short": true,
+      "non_accusatory": true,
+      "no_personal_data": true,
+      "note": "Pattern-level and neutral, but borderline: asking the merchant to commit to shipping 'by Friday' reads a little like a demand and hints at doubt about fulfilment, and 'remaining orders' is vague."
+    },
+    "q04": {
+      "pass": true,
+      "pattern_level": true,
+      "short": true,
+      "non_accusatory": true,
+      "no_personal_data": true,
+      "note": "Clear, short, neutral question about a cluster of 140 orders with no customer identifiers."
+    },
+    "q05": {
+      "pass": true,
+      "pattern_level": true,
+      "short": true,
+      "non_accusatory": true,
+      "no_personal_data": true,
+      "note": "Revised wording drops the filed-turnover reference and asks a neutral, clear question about a weekly sales pattern with benign options (planned sale or event); no customer data."
+    },
+    "q06": {
+      "pass": true,
+      "pattern_level": true,
+      "short": true,
+      "non_accusatory": true,
+      "no_personal_data": true,
+      "note": "The contradiction is gone and the ask is clear and neutral; it is slightly odd to call 884 orders one large purchase, but corporate gifting makes that plausible and a merchant would understand it."
+    },
+    "q07": {
+      "pass": true,
+      "pattern_level": true,
+      "short": true,
+      "non_accusatory": true,
+      "no_personal_data": true,
+      "note": "Neutral, pattern-level question offering benign explanations; the colon phrasing is slightly awkward and the two options may not cover every reason, but it still reads well."
+    },
+    "q08": {
+      "pass": true,
+      "pattern_level": true,
+      "short": true,
+      "non_accusatory": true,
+      "no_personal_data": true,
+      "note": "Aggregate statement about foreign-issued cards with a friendly ask; no card identifiers, though 'for this sale' assumes a sale is running."
+    },
+    "q09": {
+      "pass": true,
+      "pattern_level": true,
+      "short": true,
+      "non_accusatory": true,
+      "no_personal_data": true,
+      "note": "Short, friendly, pattern-level question with a plausible benign explanation."
+    },
+    "q10": {
+      "pass": true,
+      "pattern_level": true,
+      "short": true,
+      "non_accusatory": true,
+      "no_personal_data": true,
+      "note": "Clear and neutral; mixing a multiplier with an absolute rupee delta in parentheses is slightly dense but readable."
+    }
+  }
+}

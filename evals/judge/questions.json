@@ -1,0 +1,42 @@
+[
+  {
+    "id": "q01",
+    "question": "These 7 payments (₹5.88 lakh) from Veda Consulting: is this a corporate gifting order?"
+  },
+  {
+    "id": "q02",
+    "question": "One more ₹84,000 payment from Veda isn't on this invoice. Is it part of the same order?"
+  },
+  {
+    "id": "q03",
+    "question": "Orders jumped 6× after a reel. Can you ship the remaining orders by Friday?"
+  },
+  {
+    "id": "q04",
+    "question": "These 140 orders (₹57.8 lakh): is this one bulk buyer?"
+  },
+  {
+    "id": "q05",
+    "question": "Sales this week are much higher than usual for your business. Is this a planned sale or event?"
+  },
+  {
+    "id": "q06",
+    "question": "These 884 orders (₹33.0 lakh) look like one large purchase. Is this a bulk or corporate order?"
+  },
+  {
+    "id": "q07",
+    "question": "Refunds are higher than usual this week. What changed: a product issue, or a new returns policy?"
+  },
+  {
+    "id": "q08",
+    "question": "Some orders (₹33.7 lakh) were paid with cards issued outside India. Are you selling abroad for this sale?"
+  },
+  {
+    "id": "q09",
+    "question": "Many orders came in late at night. Did you run a midnight offer?"
+  },
+  {
+    "id": "q10",
+    "question": "Orders are 8.7× your usual (₹90.9 lakh above a normal day). Are you running a sale?"
+  }
+]

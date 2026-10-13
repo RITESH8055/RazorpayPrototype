@@ -26,10 +26,11 @@ import { fmtDate, inr } from "./format";
 
 const GSTIN_RE = /^[0-3][0-9][A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 
-/** Lower-case, expand legal suffixes and strip punctuation so "Pvt Ltd" equals "Private Limited". */
+/** Lower-case, expand legal suffixes and strip punctuation so "Pvt Ltd" and "(P) Ltd" equal "Private Limited". */
 export function normaliseName(name: string) {
   return name
     .toLowerCase()
+    .replace(/\(\s*p\s*\)/g, " private ")
     .replace(/\bpvt\b\.?/g, "private")
     .replace(/\bltd\b\.?/g, "limited")
     .replace(/[^a-z0-9 ]/g, " ")

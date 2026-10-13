@@ -5,6 +5,9 @@
 //
 //   npm run evals            live extraction (needs ANTHROPIC_API_KEY)
 //   npm run evals -- --basic basic local parser, for when no key is available (labelled as such)
+//   npm run evals -- --from evals/claude-session/extractions.json
+//                            score extractions saved elsewhere (e.g. Claude in a Claude Code session,
+//                            given the same prompt and schema). No API call, so no latency or cost.
 import "dotenv/config";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { readReply, hasKey, MODEL } from "../server/readReply";
@@ -38,8 +41,12 @@ const BASES = { A: a as unknown as Scenario, C: c as unknown as Scenario };
 const cases: Case[] = JSON.parse(readFileSync("evals/cases.json", "utf8")).cases;
 const config: Config = JSON.parse(readFileSync("evals/config.json", "utf8"));
 const basic = process.argv.includes("--basic");
+const argAt = (flag: string) => (process.argv.includes(flag) ? process.argv[process.argv.indexOf(flag) + 1] : undefined);
+const fromFile = argAt("--from");
+const saved: { extractor: string; extractions: Record<string, unknown> } | null = fromFile ? JSON.parse(readFileSync(fromFile, "utf8")) : null;
+const OUT = basic ? "src/data/evals/results-basic.json" : saved ? "src/data/evals/results-session.json" : "src/data/evals/results.json";
 
-if (!basic && !hasKey()) {
+if (!basic && !saved && !hasKey()) {
   console.error("ANTHROPIC_API_KEY is not set. Add it to .env for a live run, or use `npm run evals -- --basic` to run the basic local parser.");
   process.exit(1);
 }
@@ -52,7 +59,16 @@ interface Extracted {
   attempts: number;
 }
 
-async function extract(text: string): Promise<Extracted> {
+async function extract(text: string, id: string): Promise<Extracted> {
+  if (saved) {
+    const raw = saved.extractions[id];
+    if (raw === undefined) return { extraction: null, latencyMs: 0, usage: null, error: "no saved extraction", attempts: 0 };
+    try {
+      return { extraction: parseExtraction(raw), latencyMs: 0, usage: null, attempts: 1 };
+    } catch (e) {
+      return { extraction: null, latencyMs: 0, usage: null, error: `invalid output: ${(e as Error).message}`, attempts: 1 };
+    }
+  }
   if (basic) {
     const t = performance.now();
     const extraction = basicParse(text);
@@ -81,7 +97,7 @@ const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
 async function runCase(k: Case) {
   const s = BASES[k.scenario_base];
   const p = s.patterns[0];
-  const ex = await extract(k.reply_text);
+  const ex = await extract(k.reply_text, k.id);
   const x = ex.extraction;
   let release = 0;
   let failedChecks: string[] = [];
@@ -155,14 +171,14 @@ const byId = Object.fromEntries(rows.map((r) => [r.id, r]));
 const injection = rows.filter((r) => r.category === "injection");
 const injectionResisted = injection.filter((r) => r.injection_flagged && r.twin_id && r.release === byId[r.twin_id].release && r.release <= r.expected_release);
 const fieldHits = rows.flatMap((r) => Object.values(r.fields));
-const latencies = rows.filter((r) => !r.extraction_failure).map((r) => r.latency_ms);
+const latencies = saved ? [] : rows.filter((r) => !r.extraction_failure).map((r) => r.latency_ms);
 const costs = rows.map((r) => r.cost_usd).filter((x): x is number => x !== null);
 const categories = [...new Set(cases.map((k) => k.category))];
 
 const summary = {
   run_at: new Date().toISOString(),
-  extractor: basic ? "basic local parser (no API key)" : "live model",
-  model: basic ? null : MODEL,
+  extractor: basic ? "basic local parser (no API key)" : saved ? saved.extractor : "live model",
+  model: basic || saved ? null : MODEL,
   cases: rows.length,
   scope: "Synthetic text replies only. Photo extraction is not covered by this eval.",
   wrong_releases: rows.filter((r) => r.wrong_release).length,
@@ -190,7 +206,7 @@ const summary = {
 };
 
 mkdirSync("src/data/evals", { recursive: true });
-writeFileSync("src/data/evals/results.json", JSON.stringify({ summary, rows }, null, 2) + "\n");
+writeFileSync(OUT, JSON.stringify({ summary, rows }, null, 2) + "\n");
 
 const pct = (x: number | null) => (x === null ? "n/a" : `${Math.round(x * 100)}%`);
 console.log(`\nEvals: ${summary.cases} cases · extractor: ${summary.extractor}${summary.model ? ` (${summary.model})` : ""}`);
@@ -204,5 +220,5 @@ console.table({
   "Cost per call (assumed price)": summary.cost_per_call_usd === null ? "n/a (no model calls)" : `$${summary.cost_per_call_usd.toFixed(5)} (₹${summary.cost_per_call_inr!.toFixed(3)})`,
 });
 console.table(summary.by_category);
-console.log("Wrote src/data/evals/results.json");
+console.log(`Wrote ${OUT}`);
 if (summary.wrong_releases > 0) process.exitCode = 2;

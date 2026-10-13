@@ -27,7 +27,7 @@ export interface Scenario {
   startIso: string;
   startHourOfDay: number;
   spikeStartHour: number;
-  baseline: { source: "account_aggregator" | "category_peers"; label: string; hourly: number[] };
+  baseline: { source: "account_aggregator" | "category_peers" | "razorpay_history"; label: string; hourly: number[] };
   hourly: { hour: number; orders: number; gmv: number }[];
   orders: Order[];
   offer: { url: string; text: string; code: string; startHour: number; scannedAtHour: number } | null;

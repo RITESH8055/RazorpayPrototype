@@ -74,7 +74,7 @@ export default function AnalystScreen() {
               <span>
                 <b className="text-brand">{f.volume_multiple}x</b> baseline
               </span>
-              <span className="text-ink-muted">Baseline: {s.baseline.source === "account_aggregator" ? "AA history (14 mo)" : "category peer median"}</span>
+              <span className="text-ink-muted">Baseline: {s.baseline.source === "account_aggregator" ? "AA history (14 mo)" : s.baseline.source === "razorpay_history" ? "Razorpay orders only (bank history not shared)" : "category peer median"}</span>
               <span className="text-ink-muted">Trigger: 3x for 3h {f.trigger_fired ? "fired" : "not fired"}</span>
             </div>
           </>,

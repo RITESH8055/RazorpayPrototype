@@ -1,7 +1,8 @@
 import { createContext, useContext, useMemo, useReducer, type Dispatch, type ReactNode } from "react";
 import type { Declaration, Decision, Merchant, ReadResult, ScenarioId, SourceId, SourceStatus } from "../lib/types";
 import { SCENARIOS } from "../lib/scenarios";
-import { buildEvidence } from "../lib/features";
+import { buildEvidence, computeFeatures } from "../lib/features";
+import { applyConsent } from "../shared/consent";
 import type { Submission } from "../lib/readReply";
 
 export type View = "merchant" | "analyst";
@@ -193,9 +194,12 @@ export function useCase() {
     () => ({ ...base.merchant, sources: base.merchant.sources.map((s) => ({ ...s, status: cs.sourceStatus[s.id] ?? s.status })) }),
     [base, cs.sourceStatus],
   );
-  const evidence = useMemo(() => buildEvidence(base.scenario, base.features, merchant), [base, merchant]);
+  // Consent gate: a withdrawn source's data is not used for features or evidence.
+  const scenario = useMemo(() => applyConsent(base.scenario, merchant), [base, merchant]);
+  const features = useMemo(() => (scenario === base.scenario ? base.features : computeFeatures(scenario)), [base, scenario]);
+  const evidence = useMemo(() => buildEvidence(scenario, features, merchant), [scenario, features, merchant]);
 
-  return { ...base, merchant, evidence, cs, state, dispatch };
+  return { ...base, scenario, features, merchant, evidence, cs, state, dispatch };
 }
 
 /** Evidence coverage: how many sources are shared for this sale. No quality judgment. */
