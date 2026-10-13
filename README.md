@@ -25,6 +25,10 @@ Other scripts:
 | `npm run data` | Regenerates `src/data/scenarios/*.json` (seeded, deterministic) |
 | `npx tsx scripts/check-features.ts` | Prints the computed features for each scenario |
 
+## Deploy (Vercel)
+
+The site deploys to Vercel as a Vite static build plus two functions: `api/analyze.ts` and `api/health.ts`. Both share `server/analyze.ts` with the local Express proxy. To turn on live AI, add `ANTHROPIC_API_KEY` in Vercel → Project → Settings → Environment Variables and redeploy. Without it, the hosted site runs in fallback mode.
+
 ## Demo path (under 90 seconds)
 
 1. **A · Kesar & Co**, Merchant view: Profile (Ready, 4 of 4 sources) → Next: spike alert → **Approve and share**.
@@ -42,7 +46,9 @@ src/lib/features.ts  computes every number the AI sees (volume multiple, KS shif
                      and builds evidence snippets E1–E10
 src/lib/guardrails.ts  code-enforced rules applied to live AND fallback output
 src/lib/analysis.ts  calls the proxy, falls back on any failure
-server/index.ts      Express proxy to the Anthropic Messages API (structured JSON output)
+server/analyze.ts    Anthropic Messages API call (structured JSON output), shared by:
+server/index.ts      local Express proxy (npm run dev)
+api/                 Vercel functions for the hosted site
 src/screens/         Profile, Spike + Pack, Analyst review, Outcome + learning
 ```
 
