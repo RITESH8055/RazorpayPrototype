@@ -3,6 +3,7 @@ import { coverage, useCase } from "../state/store";
 import type { Declaration, ProfileSource } from "../lib/types";
 import { AiBadge, Button, Group, Modal, Row, Toggle } from "../components/ui";
 import { fmtDate, lakh } from "../shared/format";
+import { LiveSale, ReadyChecklist, TrustProgress } from "./MerchantSidebar";
 
 const EMPTY: Declaration = {
   sale_name: "",
@@ -40,9 +41,8 @@ export default function DeclareScreen() {
   const optionalShared = merchant.sources.some((x) => x.withdrawable && x.status === "shared");
 
   return (
-    <div className="mx-auto max-w-[720px] space-y-8 pb-6 pt-2">
-      {/* Large title */}
-      <header>
+    <div className="mx-auto grid max-w-[1120px] gap-x-8 gap-y-8 pb-6 pt-2 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <header className="lg:col-span-2">
         <p className="text-[13px] font-medium text-ink-muted">
           {merchant.category} · {merchant.city}
         </p>
@@ -52,6 +52,7 @@ export default function DeclareScreen() {
           {TRUST_COPY[trust]} · {s.history.clean_delivered_orders.toLocaleString("en-IN")} orders delivered, {s.history.dispute_rate_pct}% disputes
         </p>
       </header>
+    <div className="min-w-0 space-y-8">
 
       {/* The sale */}
       {status === "submitted" && d ? (
@@ -185,6 +186,14 @@ export default function DeclareScreen() {
           );
         })}
       </Group>
+
+    </div>
+
+      <aside className="space-y-4">
+        <LiveSale />
+        <TrustProgress />
+        <ReadyChecklist />
+      </aside>
 
       {viewing && (
         <Modal title={viewing.name} onClose={() => setViewing(null)}>

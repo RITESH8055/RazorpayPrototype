@@ -1,27 +1,23 @@
 import { useRef, useState, type ReactNode } from "react";
 import { useCase } from "../state/store";
-import { derivePattern, type PatternView } from "../state/derive";
+import type { PatternView } from "../state/derive";
 import { AiBadge, Button } from "../components/ui";
 import { VolumeChart } from "../components/charts";
 import { fmtDate, inr, lakh } from "../shared/format";
 import { urlToDataUrl, type Submission } from "../lib/readReply";
+import { PayoutTimeline, TrustProgress, useSettlement, WhyQuestions } from "./MerchantSidebar";
 
 export default function SpikeScreen() {
-  const { scenario: s, features: f, cs, trust, spikeValue } = useCase();
+  const { scenario: s, features: f, cs } = useCase();
   const [showChart, setShowChart] = useState(false);
-  const views = s.patterns.map((p) => derivePattern(s, trust, p, cs.patterns[p.id], cs.reads[p.id], cs.decisions[p.id]));
-  const waiting = views.reduce((a, v) => a + v.waiting, 0);
-  const stopped = views.reduce((a, v) => a + v.stopped, 0);
-  const onTime = spikeValue - waiting - stopped;
+  const { views, waiting, stopped, onTime, spikeValue, open } = useSettlement();
   const env = s.envelope;
   const declared = cs.declarationStatus === "submitted";
   const inside = f.volume_multiple >= env.volume_multiple_min && f.volume_multiple <= env.volume_multiple_max;
-  const open = views.filter((v) => !v.decision && v.state.status !== "submitted" && v.state.status !== "not_recognised").length;
 
   return (
-    <div className="mx-auto max-w-[720px] space-y-8 pb-6 pt-2">
-      {/* Large title: what happened, in one line */}
-      <header>
+    <div className="mx-auto grid max-w-[1120px] gap-x-8 gap-y-8 pb-6 pt-2 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <header className="lg:col-span-2">
         <p className="text-[13px] font-medium text-ink-muted">{declared && cs.declaration ? cs.declaration.sale_name : "No sale declared"} · last 24 hours</p>
         <h1 className="mt-1 font-display text-[34px] font-semibold leading-tight tracking-tight">Your sales are {f.volume_multiple}× your usual</h1>
         <p className="mt-1.5 text-[15px] text-ink-body">
@@ -29,6 +25,7 @@ export default function SpikeScreen() {
           {declared && <span className={inside ? "text-positive" : "text-ink-muted"}>{inside ? "Within your plan." : "Outside your declared plan."}</span>}
         </p>
       </header>
+    <div className="min-w-0 space-y-8">
 
       {/* The answer to "will I get paid?" */}
       <section className="rounded-2xl bg-white p-6 shadow-card">
@@ -81,6 +78,13 @@ export default function SpikeScreen() {
           </div>
         )}
       </section>
+    </div>
+
+      <aside className="space-y-4">
+        <PayoutTimeline />
+        <TrustProgress />
+        <WhyQuestions />
+      </aside>
     </div>
   );
 }
