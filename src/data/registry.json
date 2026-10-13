@@ -1,0 +1,10 @@
+[
+  { "gstin": "29AAICV4821K1Z5", "status": "Active", "legal_name": "Veda Consulting Private Limited" },
+  { "gstin": "09AAJCN7314M1ZQ", "status": "Active", "legal_name": "Northwind Interiors Private Limited" },
+  { "gstin": "27AABCO5521F1Z3", "status": "Active", "legal_name": "Orbit Gifting Solutions Private Limited" },
+  { "gstin": "07AAFFS9012K1ZD", "status": "Active", "legal_name": "Saffron Events LLP" },
+  { "gstin": "29AADCB7743P1Z9", "status": "Active", "legal_name": "Bluepeak Corporate Services Private Limited" },
+  { "gstin": "33AAGCM2210L1ZX", "status": "Cancelled", "legal_name": "Marigold Hospitality Private Limited" },
+  { "gstin": "24AAHCT4418N1Z2", "status": "Active", "legal_name": "Tarang Textiles Private Limited" },
+  { "gstin": "29AAMCG5512D1Z8", "status": "Active", "legal_name": "Glow Ritual Private Limited" }
+]

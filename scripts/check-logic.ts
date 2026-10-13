@@ -1,9 +1,11 @@
 // Acceptance checks for reserve, trust, checks and extraction guardrails: npm test
 import assert from "node:assert/strict";
 import type { Scenario } from "../src/lib/types";
-import { runChecks } from "../src/logic/checks";
-import { clampReserve, discount, reserve, reserveFloor, settle, trustLevel } from "../src/logic/reserve";
-import { InvalidExtraction, looksLikeInstructions, parseExtraction } from "../src/logic/extraction";
+import { runChecks } from "../src/shared/checks";
+import { capRevision, clampReserve, discount, GSTIN_CHECK, PAYER_CHECK, reserve, reserveFloor, settle, trustLevel } from "../src/shared/reserve";
+import { InvalidExtraction, looksLikeInstructions, parseExtraction } from "../src/shared/extraction";
+import { PRESETS } from "../src/lib/foolPresets";
+import { basicParse } from "../src/shared/basicParser";
 import a from "../src/data/scenarios/a.json";
 import b from "../src/data/scenarios/b.json";
 import c from "../src/data/scenarios/c.json";
@@ -46,8 +48,8 @@ assert.equal(runA.summary, "Invoice covers 6 of 7 payments. Payer matches buyer.
 const pc = C.patterns[0];
 const xc = parseExtraction(rc);
 const runC = runChecks(C, pc.id, xc);
-assert.equal(runC.checks.find((k) => k.name === "Legal name matches payer")!.pass, false);
-assert.equal(runC.checks.find((k) => k.name === "GSTIN format valid")!.pass, true);
+assert.equal(runC.checks.find((k) => k.name === PAYER_CHECK)!.pass, false);
+assert.equal(runC.checks.find((k) => k.name === GSTIN_CHECK)!.pass, true);
 const sc = settle(pc, trustLevel(C.history), runC.matchedValue, runC.checks);
 assert.equal(sc.release, 0);
 assert.equal(sc.reserve, pc.value);
@@ -73,3 +75,27 @@ assert.throws(() => parseExtraction("nope"), InvalidExtraction);
 assert.throws(() => parseExtraction({ buyer_name: { value: "x" } }), InvalidExtraction);
 
 console.log("logic: all checks passed");
+
+// "Try to fool it": every preset (and every pair of presets), parsed by the basic parser,
+// never releases more than the first answer, even before the one-round cap.
+for (const [S, r] of [[A, ra], [C, rc]] as const) {
+  const p = S.patterns[0];
+  const first = parseExtraction(r);
+  const firstRun = runChecks(S, p.id, first);
+  const firstRelease = settle(p, trustLevel(S.history), firstRun.matchedValue, firstRun.checks).release;
+  const ctx = { original: S.invoice_fixture!.text_transcript, gstin: S.registry_fixture.gstin, buyer: first.buyer_name.value, total: first.invoice_total.value, patternValue: p.value };
+  const presets = PRESETS.filter((x) => x.id !== "reset");
+  const combos = [[], ...presets.map((x) => [x]), ...presets.flatMap((x) => presets.filter((y) => y !== x).map((y) => [x, y]))];
+  for (const combo of combos) {
+    const text = combo.reduce((t, pr) => pr.apply(t, ctx), ctx.original);
+    const x = basicParse(text);
+    const run = runChecks(S, p.id, x);
+    const raw = settle(p, trustLevel(S.history), run.matchedValue, run.checks).release;
+    const final = capRevision(raw, firstRelease);
+    assert.ok(final <= firstRelease, `${S.id} ${combo.map((c) => c.id).join("+")}: released ${final} > ${firstRelease}`);
+    // Without the cap, only the genuine buyer's own payments can ever be released.
+    if (raw > firstRelease) assert.equal(S.id, "a", `${S.id} ${combo.map((c) => c.id).join("+")} raw release above first answer`);
+    if (combo.some((c) => c.id === "instruction")) assert.equal(x.document_contains_instructions, true);
+  }
+}
+console.log("fool presets: no attempt releases more than the first answer");

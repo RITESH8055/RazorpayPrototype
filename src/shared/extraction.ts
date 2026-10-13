@@ -4,7 +4,8 @@ import type { Extraction, Field } from "../lib/types";
 
 export class InvalidExtraction extends Error {}
 
-const INSTRUCTION_RE = /\b(release (all )?(the )?funds?|approve (this|the|all)|verified merchant|ignore (all |any |the )?(previous|prior|above) instructions|you (must|should) (release|approve))\b/i;
+const INSTRUCTION_RE =
+  /\b(release (all )?(the )?(funds?|payments?|money)|release kar(o|do| do| dijiye)|approve (this|the|all)|verified merchant|mark(ed)? (as )?verified|system( note)?\s*:|ignore (all |any |the )?(previous|prior|above|earlier) (instructions|rules)|you (must|should) (release|approve)|(saare|sab) (funds?|paise?) release|(note|message|instruction)s? (to|for) (the )?(reviewer|analyst|model|ai|system)\b)/i;
 
 /** True if the text looks like it is trying to instruct the reviewer or the model. */
 export function looksLikeInstructions(text: string | undefined | null) {

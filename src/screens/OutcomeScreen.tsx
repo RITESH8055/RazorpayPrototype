@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { useCase } from "../state/store";
+import EvalsPanel from "./EvalsPanel";
 import { Button, Card, Chip, Stat, TRUST_TONE } from "../components/ui";
-import { fmtDate, inr, lakh } from "../lib/format";
+import { fmtDate, inr, lakh } from "../shared/format";
 import { SCENARIOS } from "../lib/scenarios";
-import { trustLevel } from "../logic/reserve";
+import { trustLevel } from "../shared/reserve";
 
 // Synthetic history so the counters aren't empty at the start of a demo.
 const HISTORY = { patterns: 78, oneRound: 61, decisions: 47, agreed: 41, falseHoldValue: 1840000 };
@@ -14,6 +16,28 @@ function fmtDuration(sec: number) {
 const KIND_TEXT: Record<string, string> = { approve: "Match result approved", modify: "Approved with changed reserve", override: "Analyst override" };
 
 export default function OutcomeScreen() {
+  const [tab, setTab] = useState<"case" | "evals">("case");
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-1 rounded-md bg-white p-1 shadow-sm ring-1 ring-line" role="tablist" style={{ width: "fit-content" }}>
+        {(["case", "evals"] as const).map((t) => (
+          <button
+            key={t}
+            role="tab"
+            aria-selected={tab === t}
+            onClick={() => setTab(t)}
+            className={`rounded-sm px-3 py-1 text-[12px] font-semibold ${tab === t ? "bg-brand text-white" : "text-ink-body hover:text-ink"}`}
+          >
+            {t === "case" ? "Case outcome" : "Evals"}
+          </button>
+        ))}
+      </div>
+      {tab === "case" ? <CaseOutcome /> : <EvalsPanel />}
+    </div>
+  );
+}
+
+function CaseOutcome() {
   const { scenario: s, merchant, cs, state, dispatch, trust } = useCase();
   const decisions = Object.values(cs.decisions);
 
@@ -93,7 +117,7 @@ export default function OutcomeScreen() {
                 <li
                   key={e.id}
                   className={`rounded-md border-l-[3px] bg-surface-alt px-3 py-2 text-[12px] ${
-                    e.kind === "override" || e.kind === "edit" ? "border-warn" : e.kind === "trigger" || e.kind === "injection" || e.kind === "match" ? "border-danger" : e.kind === "consent" ? "border-ink-subtle" : "border-brand"
+                    e.kind === "override" || e.kind === "edit" ? "border-warn" : e.kind === "trigger" || e.kind === "injection" || e.kind === "match" || e.kind === "breach" ? "border-danger" : e.kind === "consent" || e.kind === "fool" ? "border-ink-subtle" : "border-brand"
                   }`}
                 >
                   <div className="flex items-center gap-2 text-[11px] text-ink-muted">

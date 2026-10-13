@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { coverage, useCase } from "../state/store";
 import type { Declaration, ProfileSource, SourceStatus } from "../lib/types";
 import { AiBadge, Button, Card, Chip, Eyebrow, Modal, Stat, TRUST_TONE } from "../components/ui";
-import { fmtDate, lakh } from "../lib/format";
+import { fmtDate, lakh } from "../shared/format";
 
 const STATUS: Record<SourceStatus, string> = {
   shared: "Shared",

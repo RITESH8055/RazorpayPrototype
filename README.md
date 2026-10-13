@@ -1,4 +1,4 @@
-# Sale Readiness (prototype, v0.2)
+# Sale Readiness (prototype, v0.3)
 
 A clickable prototype for the Razorpay x ISB Build Challenge, Track 2 "Recover and Grow with AI".
 
@@ -22,7 +22,9 @@ Without an API key, **Run reply reading** loads the scripted extraction for the 
 
 | Script | What it does |
 |---|---|
-| `npm test` | Trust, reserve, checks and extraction guardrails against the acceptance criteria |
+| `npm test` | Trust, reserve, checks, extraction guardrails, and every "Try to fool it" preset (and pair of presets) |
+| `npm run evals` | Runs the 48 eval cases through the live model and writes `src/data/evals/results.json` (needs `ANTHROPIC_API_KEY`) |
+| `npm run evals -- --basic` | Same cases through the basic local parser, for when no key is available; the scorecard labels it |
 | `npm run typecheck` | TypeScript check for app, proxy and Vercel functions |
 | `npm run data` | Regenerates scenario data and reply-reading fallbacks (seeded, deterministic) |
 
@@ -38,6 +40,16 @@ Without an API key, **Run reply reading** loads the scripted extraction for the 
 8. **Approve (analyst):** approve, modify the reserve between floor and full unresolved value, or override with a required reason.
 9. **Learn:** outcomes update trust; overrides queue match tolerances for review.
 
+## The guarantee
+
+**Money can only release when the payer on the actual payments matches the document.** `releaseNow` in `src/shared/reserve.ts` releases matched value only if the payer named by the buyer's bank matches the document's buyer, the GSTIN is well-formed, and the (synthetic) registry confirms that GSTIN belongs to that buyer. Editing the text can never change payment or registry data, so it can never move money on its own. A revised reply also can't release more than the first answer did (one round per pattern); anything above that waits for the analyst.
+
+## v0.3: Try to fool it, and evals
+
+**Try to fool it** (Review screen, analyst view): edit the merchant's reply freely or use the presets (change GSTIN, claim another company, inflate total, hide an instruction, Hinglish claim, reset), then Run. It uses the same `/api/read-reply` call; if that fails, a basic local parser (`src/shared/basicParser.ts`) reads the text instead, with a "Fallback (basic parser)" badge. Every attempt is compared with the first answer, logged to the analyst learning log, and counted ("Money released by attempts: ₹0"). A release above the first answer would show a red "Guardrail breach" banner.
+
+**Evals** (Outcome screen → Evals tab): 48 synthetic text-reply cases in `evals/cases.json` across 8 categories (genuine, partial, borrowed company, invalid GSTIN, name mismatch, injection, Hinglish, missing or ambiguous). `scripts/run-evals.ts` uses the app's exact prompt, schema, validation, checks and reserve code. Metrics: wrong releases (target 0), false holds, field accuracy, injection resistance (target 100%), extraction failure rate, median and p95 latency, and cost per call from `evals/config.json` (price labelled assumed). The panel reads the saved results; evals never run from the browser.
+
 ## Where AI sits
 
 | Step | Who | Why |
@@ -51,9 +63,13 @@ The model never outputs a release decision or amount. Every amount on screen com
 ## Code map
 
 ```
-src/logic/reserve.ts     trust levels, discounts, reserve floor, release rule
-src/logic/checks.ts      GSTIN, registry, payer, total, quantity, courier checks + summary line
-src/logic/extraction.ts  schema validation and instruction detection for model output
+src/shared/              imported by both the app and the eval runner
+  reserve.ts             trust levels, discounts, reserve floor, release rule, one-round cap
+  checks.ts              GSTIN, registry, payer, total, quantity, courier checks + summary line
+  extraction.ts          schema validation and instruction detection for model output
+  basicParser.ts         regex fallback for edited text and keyless eval runs
+evals/                   cases.json (48 synthetic cases), config.json (model, assumed prices)
+scripts/run-evals.ts     eval runner → src/data/evals/results.json
 src/lib/readReply.ts     calls the proxy, falls back on any failure
 server/readReply.ts      Anthropic Messages API call (image/PDF/text in, JSON schema out)
 server/index.ts          local Express proxy (npm run dev)

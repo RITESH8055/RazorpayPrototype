@@ -1,5 +1,7 @@
 import type { ReadResult } from "./types";
-import { looksLikeInstructions, parseExtraction } from "../logic/extraction";
+import type { Extraction } from "./types";
+import { looksLikeInstructions, parseExtraction } from "../shared/extraction";
+import { basicParse } from "../shared/basicParser";
 import fa from "../data/fallback/read-reply-a.json";
 import fb from "../data/fallback/read-reply-b.json";
 import fc from "../data/fallback/read-reply-c.json";
@@ -16,36 +18,58 @@ export interface Submission {
   sample: boolean;
 }
 
-/** Calls the proxy. No key, timeout, invalid JSON or schema errors load the scripted fallback. */
-export async function readReply(scenarioId: string, sub: Submission): Promise<ReadResult> {
-  const started = performance.now();
+/** The pre-written reading of a scenario's original reply. */
+export function scriptedExtraction(scenarioId: string): Extraction {
+  return parseExtraction(structuredClone(FALLBACK[scenarioId]));
+}
+
+async function callProxy(scenarioId: string, file: { media_type: string; data: string } | undefined, text: string | undefined): Promise<Extraction> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), CLIENT_TIMEOUT_MS);
-  const injected = looksLikeInstructions(sub.text);
-  let fallbackReason: string;
   try {
-    let file: { media_type: string; data: string } | undefined;
-    if (sub.fileDataUrl) {
-      const m = /^data:([^;]+);base64,(.*)$/.exec(sub.fileDataUrl);
-      if (m) file = { media_type: m[1], data: m[2] };
-    }
     const res = await fetch("/api/read-reply", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       signal: ctrl.signal,
-      body: JSON.stringify({ scenario_id: scenarioId, file, text: file ? undefined : sub.text }),
+      body: JSON.stringify({ scenario_id: scenarioId, file, text: file ? undefined : text }),
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.message ?? `Proxy returned ${res.status}`);
-    const extraction = parseExtraction(body.extraction);
-    return { source: "live", latencyMs: Math.round(performance.now() - started), extraction, injectionDetected: extraction.document_contains_instructions || injected };
-  } catch (err) {
-    fallbackReason = err instanceof DOMException && err.name === "AbortError" ? "Timed out" : err instanceof Error ? err.message : "Unknown error";
+    return parseExtraction(body.extraction);
   } finally {
     clearTimeout(timer);
   }
-  const extraction = parseExtraction(structuredClone(FALLBACK[scenarioId]));
-  return { source: "fallback", fallbackReason, latencyMs: Math.round(performance.now() - started), extraction, injectionDetected: extraction.document_contains_instructions || injected };
+}
+
+const reason = (err: unknown) => (err instanceof DOMException && err.name === "AbortError" ? "Timed out" : err instanceof Error ? err.message : "Unknown error");
+
+/** Calls the proxy. No key, timeout, invalid JSON or schema errors load the scripted fallback. */
+export async function readReply(scenarioId: string, sub: Submission): Promise<ReadResult> {
+  const started = performance.now();
+  const injected = looksLikeInstructions(sub.text);
+  let file: { media_type: string; data: string } | undefined;
+  const m = sub.fileDataUrl ? /^data:([^;]+);base64,(.*)$/.exec(sub.fileDataUrl) : null;
+  if (m) file = { media_type: m[1], data: m[2] };
+  try {
+    const extraction = await callProxy(scenarioId, file, sub.text);
+    return { source: "live", latencyMs: Math.round(performance.now() - started), extraction, injectionDetected: extraction.document_contains_instructions || injected };
+  } catch (err) {
+    const extraction = parseExtraction(structuredClone(FALLBACK[scenarioId]));
+    return { source: "fallback", fallbackKind: "scripted", fallbackReason: reason(err), latencyMs: Math.round(performance.now() - started), extraction, injectionDetected: extraction.document_contains_instructions || injected };
+  }
+}
+
+/** Edited text ("Try to fool it"): live reading, else the basic local parser on the same text. */
+export async function readText(scenarioId: string, text: string): Promise<ReadResult> {
+  const started = performance.now();
+  const injected = looksLikeInstructions(text);
+  try {
+    const extraction = await callProxy(scenarioId, undefined, text);
+    return { source: "live", latencyMs: Math.round(performance.now() - started), extraction, injectionDetected: extraction.document_contains_instructions || injected };
+  } catch (err) {
+    const extraction = basicParse(text);
+    return { source: "fallback", fallbackKind: "basic", fallbackReason: reason(err), latencyMs: Math.round(performance.now() - started), extraction, injectionDetected: extraction.document_contains_instructions || injected };
+  }
 }
 
 export async function urlToDataUrl(url: string): Promise<string> {

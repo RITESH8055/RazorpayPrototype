@@ -26,13 +26,15 @@ interface CaseState {
   reading: string | null;
   decisions: Record<string, Decision>;
   openedAt: number;
+  /** "Try to fool it" session counter: attempts, and money released above the first answer (must stay ₹0). */
+  fool: { attempts: number; released: number };
 }
 
 export interface LearningEntry {
   id: number;
   scenarioId: ScenarioId;
   merchant: string;
-  kind: "question" | "match" | "agree" | "override" | "trigger" | "injection" | "outcome" | "trust" | "consent" | "edit";
+  kind: "question" | "match" | "agree" | "override" | "trigger" | "injection" | "outcome" | "trust" | "consent" | "edit" | "fool" | "breach";
   text: string;
   at: string;
 }
@@ -59,6 +61,7 @@ type Action =
   | { type: "readStart"; pattern: string }
   | { type: "readDone"; pattern: string; result: ReadResult }
   | { type: "decide"; decision: Decision; learning: Omit<LearningEntry, "id" | "scenarioId" | "merchant" | "at">[] }
+  | { type: "foolAttempt"; released: number; text: string; breach: boolean }
   | { type: "highlight"; card: string | null }
   | { type: "reset" };
 
@@ -73,6 +76,7 @@ const freshCase = (id: ScenarioId): CaseState => {
     reading: null,
     decisions: {},
     openedAt: Date.now(),
+    fool: { attempts: 0, released: 0 },
   };
 };
 
@@ -145,6 +149,11 @@ function reducer(state: State, action: Action): State {
         ...patch({ decisions: { ...cur.decisions, [action.decision.patternId]: action.decision } }),
         screen: "outcome",
         log: [...action.learning.map((l) => log(l.kind, l.text)), ...state.log],
+      };
+    case "foolAttempt":
+      return {
+        ...patch({ fool: { attempts: cur.fool.attempts + 1, released: cur.fool.released + action.released } }),
+        log: [log(action.breach ? "breach" : "fool", action.text), ...state.log],
       };
     case "highlight":
       return { ...state, highlight: action.card };

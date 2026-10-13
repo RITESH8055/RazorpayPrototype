@@ -3,7 +3,7 @@ import { useCase } from "../state/store";
 import { derivePattern, type PatternView } from "../state/derive";
 import { AiBadge, Button, Card, Chip } from "../components/ui";
 import { VolumeChart } from "../components/charts";
-import { fmtDate, inr, lakh } from "../lib/format";
+import { fmtDate, inr, lakh } from "../shared/format";
 import { urlToDataUrl, type Submission } from "../lib/readReply";
 
 export default function SpikeScreen() {

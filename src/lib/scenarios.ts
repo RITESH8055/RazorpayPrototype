@@ -1,6 +1,6 @@
 import type { Judgment, Merchant, Scenario, ScenarioId } from "./types";
 import { computeFeatures } from "./features";
-import { trustLevel } from "../logic/reserve";
+import { trustLevel } from "../shared/reserve";
 import merchants from "../data/merchants.json";
 import a from "../data/scenarios/a.json";
 import b from "../data/scenarios/b.json";
@@ -47,4 +47,4 @@ export function hourLabel(s: Scenario, hour: number, withDay = false) {
   return fmt.format(d);
 }
 
-export { inr, lakh, fmtDate } from "./format";
+export { inr, lakh, fmtDate } from "../shared/format";

@@ -1,7 +1,7 @@
 // Turns case state into settlement numbers. Amounts come only from src/logic/reserve.ts.
 import type { Decision, Pattern, ReadResult, Scenario, TrustLevel } from "../lib/types";
-import { runChecks, type CheckRun } from "../logic/checks";
-import { reserveFloor, settle, type Settlement } from "../logic/reserve";
+import { runChecks, type CheckRun } from "../shared/checks";
+import { reserveFloor, settle, type Settlement } from "../shared/reserve";
 import type { PatternState } from "./store";
 
 export interface PatternView {

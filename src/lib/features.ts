@@ -1,6 +1,6 @@
 // All numbers the AI sees are computed here. The model never computes numbers itself.
 import type { Evidence, Features, Merchant, Order, Scenario } from "./types";
-import { inr } from "./format";
+import { inr } from "../shared/format";
 export { inr };
 
 const TRIGGER_MULTIPLE = 3; // assumed placeholder (PRD section 8)

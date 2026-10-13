@@ -37,7 +37,7 @@ export const LABEL_META: Record<Label, { text: string; tone: Tone }> = {
 };
 
 /** Every AI output carries one of these: a real API call, pre-written AI output, or scripted output after a failed live call. */
-export function AiBadge({ kind, title }: { kind: "live" | "scripted" | "fallback"; title?: string }) {
+export function AiBadge({ kind, title, label }: { kind: "live" | "scripted" | "fallback"; title?: string; label?: string }) {
   const meta = {
     live: { text: "Live", tone: "positive" as Tone },
     scripted: { text: "Scripted", tone: "brand" as Tone },
@@ -46,7 +46,7 @@ export function AiBadge({ kind, title }: { kind: "live" | "scripted" | "fallback
   return (
     <span title={title ?? { live: "Real API call", scripted: "Pre-written AI output", fallback: "Live call failed; scripted result shown" }[kind]}>
       <Chip tone={meta.tone}>
-        <span className="text-[9px]">◆</span> {meta.text}
+        <span className="text-[9px]">◆</span> {label ?? meta.text}
       </Chip>
     </span>
   );

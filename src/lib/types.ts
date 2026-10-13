@@ -122,6 +122,8 @@ export interface Check {
 
 export interface ReadResult {
   source: "live" | "fallback";
+  /** Which fallback ran: the pre-written result for the original reply, or the basic local parser for edited text. */
+  fallbackKind?: "scripted" | "basic";
   fallbackReason?: string;
   latencyMs: number;
   extraction: Extraction;

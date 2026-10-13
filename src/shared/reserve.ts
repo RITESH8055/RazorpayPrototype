@@ -38,16 +38,27 @@ export function reserve(unresolvedValue: number, disc: number) {
   return Math.max(Math.round(unresolvedValue * (1 - disc)), reserveFloor(unresolvedValue));
 }
 
+export const PAYER_CHECK = "Payer matches document's buyer";
+export const REGISTRY_CHECK = "GSTIN registry status and legal name";
+export const GSTIN_CHECK = "GSTIN format valid";
+
 /**
- * Matched value is released only if the payer check passes and at least one other check
- * observed by a party the merchant does not control passes too.
+ * The guarantee: money releases only when the payer on the actual payments matches the
+ * document's buyer, and the government registry confirms that buyer's GSTIN. Editing a
+ * document cannot change payment or registry data, so text alone can never move money.
  */
 export function releaseNow(matchedValue: number, checks: Check[]) {
-  const payer = checks.find((c) => c.name === PAYER_CHECK);
-  const otherIndependent = checks.some((c) => c.name !== PAYER_CHECK && c.independent && c.pass);
-  return payer?.pass && otherIndependent ? matchedValue : 0;
+  const pass = (name: string) => checks.find((c) => c.name === name)?.pass === true;
+  return pass(PAYER_CHECK) && pass(REGISTRY_CHECK) && pass(GSTIN_CHECK) ? matchedValue : 0;
 }
-export const PAYER_CHECK = "Legal name matches payer";
+
+/**
+ * One round per pattern (PRD A10): a revised reply can never release more than the first
+ * answer did. Anything above that waits for the analyst.
+ */
+export function capRevision(release: number, firstAnswerRelease: number) {
+  return Math.min(release, firstAnswerRelease);
+}
 
 /** Clamp an analyst's modified reserve into [floor, unresolved]. */
 export function clampReserve(value: number, unresolvedValue: number) {

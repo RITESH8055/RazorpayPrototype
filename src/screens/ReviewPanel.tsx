@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { useCase, type LearningEntry } from "../state/store";
 import { derivePattern, type PatternView } from "../state/derive";
 import { AiBadge, Button, Card, Chip, TRUST_TONE } from "../components/ui";
-import { fmtDate, inr, lakh } from "../lib/format";
+import { fmtDate, inr, lakh } from "../shared/format";
 import { DECISION_DATE } from "../lib/scenarios";
 import { readReply, urlToDataUrl } from "../lib/readReply";
-import { LOW_CONFIDENCE } from "../logic/checks";
-import { addDays, clampReserve, DISCOUNT, DISPUTE_WINDOW_DAYS } from "../logic/reserve";
-import type { Decision, Extraction, TriggerFlag } from "../lib/types";
+import { CHECK_SHORT } from "../shared/checks";
+import { ChecksList, ExtractedTable } from "./ReplyParts";
+import FoolModal from "./FoolModal";
+import { addDays, clampReserve, DISCOUNT, DISPUTE_WINDOW_DAYS } from "../shared/reserve";
+import type { Decision, TriggerFlag } from "../lib/types";
 
 export const OVERRIDE_REASONS = [
   "Merchant evidence received outside the reply",
@@ -73,20 +75,6 @@ function PatternCard({ v }: { v: PatternView }) {
   );
 }
 
-type Row = { key: keyof Extraction; label: string; fmt?: (x: number) => string };
-const INVOICE_ROWS: Row[] = [
-  { key: "buyer_name", label: "Buyer name" },
-  { key: "gstin", label: "GSTIN" },
-  { key: "invoice_total", label: "Invoice total", fmt: (x) => inr(x) },
-  { key: "quantity_total", label: "Quantity total" },
-  { key: "invoice_date", label: "Date" },
-];
-// A dispatch reply only carries a count and a date.
-const CAPACITY_ROWS: Row[] = [
-  { key: "quantity_total", label: "Orders to ship" },
-  { key: "invoice_date", label: "Ship by" },
-];
-
 function ReplyVerification({ v }: { v: PatternView }) {
   const { scenario: s, id, cs, dispatch } = useCase();
   const p = v.pattern;
@@ -94,6 +82,7 @@ function ReplyVerification({ v }: { v: PatternView }) {
   const read = cs.reads[p.id];
   const sub = ps.submission;
   const running = cs.reading === p.id;
+  const [fooling, setFooling] = useState(false);
 
   const useSample = async () => {
     const fx = s.invoice_fixture;
@@ -155,58 +144,19 @@ function ReplyVerification({ v }: { v: PatternView }) {
         </>
       )}
 
+      {p.kind === "bulk_buyer" && s.invoice_fixture && ps.status !== "not_recognised" && (
+        <Button variant="danger" className="mt-2 w-full" onClick={() => setFooling(true)}>
+          Try to fool it
+        </Button>
+      )}
+      {fooling && <FoolModal pattern={p} onClose={() => setFooling(false)} />}
+
       {read && v.run && (
         <div className="mt-3 space-y-3">
           {read.injectionDetected && <Chip tone="danger">Document contained instructions; ignored.</Chip>}
-          <table className="w-full text-[12px]">
-            <tbody>
-              {(p.kind === "capacity" ? CAPACITY_ROWS : INVOICE_ROWS).map(({ key, label, fmt }) => {
-                const f = read.extraction[key] as { value: string | number; confidence: number };
-                const low = f.confidence < LOW_CONFIDENCE;
-                const val = f.value === "" || f.value === 0 ? "—" : fmt && typeof f.value === "number" ? fmt(f.value) : String(f.value);
-                return (
-                  <tr key={key} className="border-b border-line/60">
-                    <td className="py-1 pr-2 text-ink-muted">{label}</td>
-                    <td className="py-1 font-medium">{val}</td>
-                    <td className={`py-1 text-right text-[11px] ${low ? "font-semibold text-warn" : "text-ink-subtle"}`}>{low ? "low confidence" : f.confidence.toFixed(2)}</td>
-                  </tr>
-                );
-              })}
-              {p.kind === "bulk_buyer" && (<>
-              <tr className="border-b border-line/60 align-top">
-                <td className="py-1 pr-2 text-ink-muted">Line items</td>
-                <td className="py-1" colSpan={2}>
-                  {read.extraction.line_items.length
-                    ? read.extraction.line_items.map((li, i) => (
-                        <div key={i}>
-                          {li.description} × {li.quantity}
-                        </div>
-                      ))
-                    : "—"}
-                </td>
-              </tr>
-              <tr className="align-top">
-                <td className="py-1 pr-2 text-ink-muted">Delivery</td>
-                <td className="py-1" colSpan={2}>
-                  {read.extraction.delivery_addresses.length ? read.extraction.delivery_addresses.map((a) => <div key={a}>{a}</div>) : "—"}
-                </td>
-              </tr>
-              </>)}
-            </tbody>
-          </table>
+          <ExtractedTable extraction={read.extraction} kind={p.kind} />
 
-          <ul className="space-y-1">
-            {v.run.checks.map((c) => (
-              <li key={c.name} className="flex gap-2 text-[12px]">
-                <span className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full text-[10px] font-bold text-white ${c.pass ? "bg-positive" : "bg-danger"}`}>{c.pass ? "✓" : "✕"}</span>
-                <span>
-                  <b>{c.name}</b>
-                  {c.independent && <span className="ml-1 text-[10px] text-ink-subtle">(independent)</span>}
-                  <div className="text-ink-body">{c.detail}</div>
-                </span>
-              </li>
-            ))}
-          </ul>
+          <ChecksList checks={v.run.checks} />
 
           {p.kind === "bulk_buyer" && (
             <div className="grid grid-cols-3 gap-2 rounded-md bg-surface-alt p-2 text-[12px]">
@@ -386,15 +336,6 @@ function Recommendation({ v }: { v: PatternView }) {
     </Card>
   );
 }
-
-const CHECK_SHORT: Record<string, string> = {
-  "GSTIN format valid": "GSTIN format",
-  "GSTIN registry status and legal name": "GSTIN registry",
-  "Legal name matches payer": "payer check",
-  "Invoice total vs pattern value": "invoice total",
-  "Quantity vs orders": "quantity",
-  "Delivery addresses match courier data": "courier addresses",
-};
 
 type NewEntry = Omit<LearningEntry, "id" | "scenarioId" | "merchant" | "at">;
 

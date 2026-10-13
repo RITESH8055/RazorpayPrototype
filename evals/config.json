@@ -1,0 +1,9 @@
+{
+  "model": "claude-sonnet-5-5",
+  "price_per_mtok_input_usd": 2.0,
+  "price_per_mtok_output_usd": 10.0,
+  "usd_to_inr": 84,
+  "price_label": "assumed list price; check current pricing before quoting",
+  "concurrency": 4,
+  "timeout_ms": 8000
+}

@@ -1,9 +1,28 @@
 // Deterministic checks (PRD v0.2, B9). The model only extracts fields; code decides what matches.
 import type { Check, Extraction, Order, Scenario } from "../lib/types";
-import { PAYER_CHECK } from "./reserve";
+import { GSTIN_CHECK, PAYER_CHECK, REGISTRY_CHECK } from "./reserve";
+import registryData from "../data/registry.json";
+
+export interface RegistryEntry {
+  gstin: string;
+  status: string;
+  legal_name: string;
+}
+/** Synthetic GSTN registry (all companies fictional). Government-controlled in production. */
+export const REGISTRY = registryData as RegistryEntry[];
 
 export const LOW_CONFIDENCE = 0.6;
-import { fmtDate, inr } from "../lib/format";
+
+/** Short names for log lines and verdicts. */
+export const CHECK_SHORT: Record<string, string> = {
+  [GSTIN_CHECK]: "GSTIN format",
+  [REGISTRY_CHECK]: "GSTIN registry",
+  [PAYER_CHECK]: "payer mismatch",
+  "Invoice total vs pattern value": "invoice total",
+  "Quantity vs orders": "quantity",
+  "Delivery addresses match courier data": "courier addresses",
+};
+import { fmtDate, inr } from "./format";
 
 const GSTIN_RE = /^[0-3][0-9][A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 
@@ -19,35 +38,42 @@ export function normaliseName(name: string) {
 }
 
 export function gstinFormat(gstin: string, confidence: number): Check {
-  if (confidence < LOW_CONFIDENCE) return { name: "GSTIN format valid", pass: false, independent: false, detail: "GSTIN read with low confidence." };
+  if (confidence < LOW_CONFIDENCE) return { name: GSTIN_CHECK, pass: false, independent: false, detail: gstin ? "GSTIN read with low confidence." : "No GSTIN in the reply." };
   const ok = GSTIN_RE.test(gstin.trim().toUpperCase());
-  return { name: "GSTIN format valid", pass: ok, independent: false, detail: ok ? `${gstin} has a valid 15-character structure.` : `"${gstin || "none"}" is not a valid GSTIN structure.` };
+  return { name: GSTIN_CHECK, pass: ok, independent: false, detail: ok ? `${gstin} has a valid 15-character structure.` : `"${gstin || "none"}" is not a valid GSTIN structure.` };
 }
 
-export function gstinRegistry(gstin: string, buyerName: string, confidence: number, registry: Scenario["registry_fixture"]): Check {
-  const name = "GSTIN registry status and legal name";
-  if (confidence < LOW_CONFIDENCE) return { name, pass: false, independent: true, detail: "Not checked: GSTIN read with low confidence." };
-  if (gstin.trim().toUpperCase() !== registry.gstin) return { name, pass: false, independent: true, detail: `${gstin || "No GSTIN"} not found in the registry.` };
-  const active = registry.status === "Active";
-  const sameName = normaliseName(buyerName) === normaliseName(registry.legal_name);
+export function gstinRegistry(gstin: string, buyerName: string, confidence: number, registry: RegistryEntry[]): Check {
+  const name = REGISTRY_CHECK;
+  if (confidence < LOW_CONFIDENCE) return { name, pass: false, independent: true, detail: "Not checked: GSTIN or buyer read with low confidence." };
+  const entry = registry.find((r) => r.gstin === gstin.trim().toUpperCase());
+  if (!entry) return { name, pass: false, independent: true, detail: `${gstin || "No GSTIN"} not found in the registry.` };
+  const active = entry.status === "Active";
+  const sameName = normaliseName(buyerName) === normaliseName(entry.legal_name);
   return {
     name,
     pass: active && sameName,
     independent: true,
-    detail: `${registry.status}; legal name "${registry.legal_name}"${sameName ? ", matches the invoice buyer." : `, differs from invoice buyer "${buyerName}".`}`,
+    detail: `${entry.status}; legal name "${entry.legal_name}"${sameName ? ", matches the document's buyer." : `, differs from the document's buyer "${buyerName || "none"}".`}`,
   };
 }
 
-/** Payer names come from the buyer's bank, not the merchant. Personal cards from many people fail. */
-export function payerMatch(legalName: string, payments: Order[]): Check {
+/**
+ * Payer names come from the buyer's bank, not the merchant. Every payment in the pattern must
+ * come from the buyer the document names. Personal cards from many people fail.
+ */
+export function payerMatch(docBuyer: string, confidence: number, payments: Order[]): Check {
   const payers = [...new Set(payments.map((p) => p.payer_name ?? "Unknown"))];
-  const cards = new Set(payments.filter((p) => p.method === "card").map((p) => p.card_fp));
-  const matching = payments.filter((p) => p.payer_name && normaliseName(p.payer_name) === normaliseName(legalName));
-  if (matching.length === payments.length) {
-    return { name: PAYER_CHECK, pass: true, independent: true, detail: `All ${payments.length} payments come from "${payers[0]}" (${payments[0].method ?? "card"}), which matches ${legalName}.` };
+  const cards = new Set(payments.filter((p) => (p.method ?? "card") === "card").map((p) => p.card_fp));
+  if (confidence < LOW_CONFIDENCE || !docBuyer.trim()) {
+    return { name: PAYER_CHECK, pass: false, independent: true, detail: "Document names no clear buyer to match against the payers." };
   }
-  const why = cards.size > 1 ? `paid from ${cards.size} personal cards by ${payers.length} different people` : `payer "${payers[0]}"`;
-  return { name: PAYER_CHECK, pass: false, independent: true, detail: `${matching.length} of ${payments.length} payments match ${legalName}; ${why}.` };
+  const matching = payments.filter((p) => p.payer_name && normaliseName(p.payer_name) === normaliseName(docBuyer));
+  if (matching.length === payments.length) {
+    return { name: PAYER_CHECK, pass: true, independent: true, detail: `All ${payments.length} payments come from "${payers[0]}" (${payments[0].method ?? "card"}), the buyer on the document.` };
+  }
+  const why = cards.size > 1 ? `paid from ${cards.size} personal cards by ${payers.length} different people` : `payer is "${payers[0]}"`;
+  return { name: PAYER_CHECK, pass: false, independent: true, detail: `${matching.length} of ${payments.length} payments come from "${docBuyer}"; ${why}.` };
 }
 
 /** Which payments the invoice total covers. Equal-or-smaller payments are matched until the total is used up. */
@@ -150,8 +176,8 @@ export function runChecks(s: Scenario, patternId: string, x: Extraction): CheckR
   const total = totalMatch(x.invoice_total.value, x.invoice_total.confidence, payments);
   const checks = [
     gstinFormat(x.gstin.value, x.gstin.confidence),
-    gstinRegistry(x.gstin.value, x.buyer_name.value, Math.min(x.gstin.confidence, x.buyer_name.confidence), s.registry_fixture),
-    payerMatch(s.registry_fixture.legal_name, payments),
+    gstinRegistry(x.gstin.value, x.buyer_name.value, Math.min(x.gstin.confidence, x.buyer_name.confidence), [s.registry_fixture, ...REGISTRY]),
+    payerMatch(x.buyer_name.value, x.buyer_name.confidence, payments),
     total.check,
     quantityMatch(x.quantity_total.value, x.quantity_total.confidence, payments),
     addressMatch(x.delivery_addresses, pattern.order_ids, s.courier_fixture),
