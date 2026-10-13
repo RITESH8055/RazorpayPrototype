@@ -151,11 +151,11 @@ export function Row({ label, value, sub, right, onClick, muted }: { label: React
     </>
   );
   return onClick ? (
-    <button type="button" onClick={onClick} className="flex w-full items-center gap-4 px-5 py-3.5 text-left hover:bg-surface-alt/60">
+    <button type="button" onClick={onClick} className="flex w-full items-center gap-4 px-5 py-3 text-left hover:bg-surface-alt/60">
       {body}
     </button>
   ) : (
-    <div className="flex items-center gap-4 px-5 py-3.5">{body}</div>
+    <div className="flex items-center gap-4 px-5 py-3">{body}</div>
   );
 }
 
@@ -174,3 +174,7 @@ export function Toggle({ on, onChange, disabled, label }: { on: boolean; onChang
     </button>
   );
 }
+
+/** Merchant pages: one centred column on smaller screens; three columns that fit one screen on wide ones. */
+export const MERCHANT_PAGE =
+  "mx-auto grid max-w-[720px] gap-5 pb-2 xl:max-w-[1440px] xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_minmax(300px,0.8fr)] xl:items-start";

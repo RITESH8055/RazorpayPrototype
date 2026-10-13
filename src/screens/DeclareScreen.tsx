@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { coverage, useCase } from "../state/store";
 import type { Declaration, ProfileSource } from "../lib/types";
-import { AiBadge, Button, Group, Modal, Row, Toggle } from "../components/ui";
+import { AiBadge, Button, Group, MERCHANT_PAGE as PAGE, Modal, Row, Toggle } from "../components/ui";
 import { fmtDate, lakh } from "../shared/format";
 import { LiveSale, ReadyChecklist, TrustProgress } from "./MerchantSidebar";
 
@@ -31,7 +31,6 @@ export default function DeclareScreen() {
   const { scenario: s, merchant, cs, dispatch, trust, baselineDailyValue } = useCase();
   const [viewing, setViewing] = useState<ProfileSource | null>(null);
   const [withdrawing, setWithdrawing] = useState<ProfileSource | "all" | null>(null);
-  const [showEnvelope, setShowEnvelope] = useState(false);
   const cov = coverage(merchant);
   const d = cs.declaration;
   const status = cs.declarationStatus;
@@ -41,18 +40,18 @@ export default function DeclareScreen() {
   const optionalShared = merchant.sources.some((x) => x.withdrawable && x.status === "shared");
 
   return (
-    <div className="mx-auto grid max-w-[1120px] gap-x-8 gap-y-8 pb-6 pt-2 lg:grid-cols-[minmax(0,1fr)_340px]">
-      <header className="lg:col-span-2">
-        <p className="text-[13px] font-medium text-ink-muted">
+    <div className={PAGE}>
+      <header className="flex flex-wrap items-baseline gap-x-4 gap-y-1 xl:col-span-3">
+        <h1 className="font-display text-[28px] font-semibold leading-tight tracking-tight">{merchant.name}</h1>
+        <span className="text-[14px] text-ink-muted">
           {merchant.category} · {merchant.city}
-        </p>
-        <h1 className="mt-1 font-display text-[34px] font-semibold leading-tight tracking-tight">{merchant.name}</h1>
-        <p className="mt-1.5 flex items-center gap-2 text-[15px] text-ink-body">
+        </span>
+        <p className="flex items-center gap-2 text-[14px] text-ink-body xl:ml-auto">
           <span className={`h-2 w-2 rounded-full ${trust === "Trusted" ? "bg-positive" : trust === "Building" ? "bg-brand" : "bg-ink-subtle"}`} />
           {TRUST_COPY[trust]} · {s.history.clean_delivered_orders.toLocaleString("en-IN")} orders delivered, {s.history.dispute_rate_pct}% disputes
         </p>
       </header>
-    <div className="min-w-0 space-y-8">
+    <div className="min-w-0 space-y-5">
 
       {/* The sale */}
       {status === "submitted" && d ? (
@@ -76,29 +75,24 @@ export default function DeclareScreen() {
             </span>
           </div>
           <dl className="mt-2 divide-y divide-line/60 px-6">
-            <div className="flex justify-between gap-6 py-3 text-[15px]">
+            <div className="flex justify-between gap-6 py-2.5 text-[15px]">
               <dt className="text-ink-muted">Offer</dt>
               <dd className="text-right">{d.offer_text}</dd>
             </div>
-            <div className="flex justify-between gap-6 py-3 text-[15px]">
+            <div className="flex justify-between gap-6 py-2.5 text-[15px]">
               <dt className="text-ink-muted">Expected orders</dt>
               <dd>
                 {d.expected_daily_orders_min.toLocaleString("en-IN")} to {d.expected_daily_orders_max.toLocaleString("en-IN")} a day
               </dd>
             </div>
             {d.influencer_plan && (
-              <div className="flex justify-between gap-6 py-3 text-[15px]">
+              <div className="flex justify-between gap-6 py-2.5 text-[15px]">
                 <dt className="text-ink-muted">Influencer plan</dt>
                 <dd className="text-right">{d.influencer_plan}</dd>
               </div>
             )}
           </dl>
-          <div className="px-6 pb-5">
-            <button className="mt-1 text-[13px] font-semibold text-brand-dark" onClick={() => setShowEnvelope(!showEnvelope)}>
-              {showEnvelope ? "Hide" : "What we'll expect"} {showEnvelope ? "▴" : "▾"}
-            </button>
-            {showEnvelope && EnvelopeNote()}
-          </div>
+          <div className="pb-2" />
         </section>
       ) : status === "draft" && d ? (
         <section className="rounded-2xl bg-white p-6 shadow-card">
@@ -142,6 +136,10 @@ export default function DeclareScreen() {
         </section>
       )}
 
+      <ReadyChecklist />
+    </div>
+
+    <div className="min-w-0 space-y-5">
       {/* Data sharing, settings style */}
       <Group
         title="Data for this sale"
@@ -186,13 +184,12 @@ export default function DeclareScreen() {
           );
         })}
       </Group>
-
+      {status === "submitted" && <EnvelopeCard />}
     </div>
 
-      <aside className="space-y-4">
+      <aside className="min-w-0 space-y-5">
         <LiveSale />
         <TrustProgress />
-        <ReadyChecklist />
       </aside>
 
       {viewing && (
@@ -240,14 +237,14 @@ export default function DeclareScreen() {
     </div>
   );
 
-  function EnvelopeNote() {
+  function EnvelopeCard() {
     return (
-      <div className="mt-3 rounded-xl bg-surface-alt p-4 text-[14px]">
-        <div className="mb-2 flex items-center gap-2">
-          <span className="font-semibold">Based on your plan and similar sellers</span>
+      <section className="rounded-2xl bg-white p-5 shadow-card">
+        <div className="flex items-center gap-2">
+          <h3 className="text-[13px] font-semibold uppercase tracking-wide text-ink-muted">What we'll expect</h3>
           <AiBadge kind="scripted" />
         </div>
-        <ul className="space-y-1 text-ink-body">
+        <ul className="mt-3 space-y-2 text-[15px] text-ink-body">
           <li>
             {env.volume_multiple_min}× to {env.volume_multiple_max}× your usual orders
           </li>
@@ -255,8 +252,8 @@ export default function DeclareScreen() {
           <li>About {env.expected_coupon_pct}% of orders using your offer</li>
           <li>{env.expected_timing}</li>
         </ul>
-        <p className="mt-2 text-[13px] text-ink-muted">{env.note}</p>
-      </div>
+        <p className="mt-3 text-[13px] text-ink-muted">Based on your plan and similar sellers. {env.note}</p>
+      </section>
     );
   }
 }

@@ -1,7 +1,7 @@
 import { useRef, useState, type ReactNode } from "react";
 import { useCase } from "../state/store";
 import type { PatternView } from "../state/derive";
-import { AiBadge, Button } from "../components/ui";
+import { AiBadge, Button, MERCHANT_PAGE as PAGE } from "../components/ui";
 import { VolumeChart } from "../components/charts";
 import { fmtDate, inr, lakh } from "../shared/format";
 import { urlToDataUrl, type Submission } from "../lib/readReply";
@@ -9,81 +9,77 @@ import { PayoutTimeline, TrustProgress, useSettlement, WhyQuestions } from "./Me
 
 export default function SpikeScreen() {
   const { scenario: s, features: f, cs } = useCase();
-  const [showChart, setShowChart] = useState(false);
   const { views, waiting, stopped, onTime, spikeValue, open } = useSettlement();
   const env = s.envelope;
   const declared = cs.declarationStatus === "submitted";
   const inside = f.volume_multiple >= env.volume_multiple_min && f.volume_multiple <= env.volume_multiple_max;
 
   return (
-    <div className="mx-auto grid max-w-[1120px] gap-x-8 gap-y-8 pb-6 pt-2 lg:grid-cols-[minmax(0,1fr)_340px]">
-      <header className="lg:col-span-2">
-        <p className="text-[13px] font-medium text-ink-muted">{declared && cs.declaration ? cs.declaration.sale_name : "No sale declared"} · last 24 hours</p>
-        <h1 className="mt-1 font-display text-[34px] font-semibold leading-tight tracking-tight">Your sales are {f.volume_multiple}× your usual</h1>
-        <p className="mt-1.5 text-[15px] text-ink-body">
+    <div className={PAGE}>
+      <header className="flex flex-wrap items-baseline gap-x-4 gap-y-1 xl:col-span-3">
+        <h1 className="font-display text-[28px] font-semibold leading-tight tracking-tight">Your sales are {f.volume_multiple}× your usual</h1>
+        <span className="text-[14px] text-ink-muted">{declared && cs.declaration ? cs.declaration.sale_name : "No sale declared"} · last 24 hours</span>
+        <p className="text-[14px] text-ink-body xl:ml-auto">
           {f.spike_orders} orders, against about {f.baseline_orders_per_day} on a usual day.{" "}
           {declared && <span className={inside ? "text-positive" : "text-ink-muted"}>{inside ? "Within your plan." : "Outside your declared plan."}</span>}
         </p>
       </header>
-    <div className="min-w-0 space-y-8">
 
-      {/* The answer to "will I get paid?" */}
-      <section className="rounded-2xl bg-white p-6 shadow-card">
-        <div className="text-[13px] font-medium text-ink-muted">Settling on time</div>
-        <div className="mt-0.5 font-display text-[40px] font-semibold leading-none text-positive">{lakh(onTime)}</div>
-        <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-surface-alt-2">
-          <div className="h-1.5 rounded-full bg-positive" style={{ width: `${(onTime / spikeValue) * 100}%` }} />
-        </div>
-        <div className="mt-3 flex flex-wrap justify-between gap-2 text-[15px] text-ink-body">
-          <span>
-            {waiting > 0 ? (
-              <>
-                <b className="text-ink">{lakh(waiting)}</b> {open ? "waits for your answer" : "is held for now"}
-              </>
-            ) : (
-              "Nothing is waiting"
-            )}
-          </span>
-          {stopped > 0 && <span>{lakh(stopped)} stopped for cancellation</span>}
-        </div>
-      </section>
-
-      {/* Questions */}
-      <section id="questions" className="space-y-3">
-        <div className="flex items-center gap-2 px-1">
-          <h2 className="text-[13px] font-semibold uppercase tracking-wide text-ink-muted">{views.length === 1 ? "One question for you" : `${views.length} questions for you`}</h2>
-          <AiBadge kind="scripted" />
-        </div>
-        {views.map((v) => (
-          <QuestionCard key={v.pattern.id} v={v} />
-        ))}
-      </section>
-
-      {/* Detail on demand */}
-      <section>
-        <button className="px-1 text-[15px] font-semibold text-brand-dark" onClick={() => setShowChart(!showChart)}>
-          {showChart ? "Hide orders by hour ▴" : "See orders by hour ▾"}
-        </button>
-        {showChart && (
-          <div className="mt-3 rounded-2xl bg-white p-5 shadow-card">
-            <VolumeChart s={s} from={48} height={190} />
-            <div className="mt-2 flex gap-4 text-[13px] text-ink-muted">
-              <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-sm bg-brand" /> Orders
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="h-0 w-4 border-t-2 border-dashed border-ink" /> Your usual
-              </span>
-            </div>
+      <div className="min-w-0 space-y-5">
+        {/* The answer to "will I get paid?" */}
+        <section className="rounded-2xl bg-white p-6 shadow-card">
+          <div className="text-[13px] font-medium text-ink-muted">Settling on time</div>
+          <div className="mt-0.5 font-display text-[40px] font-semibold leading-none text-positive">{lakh(onTime)}</div>
+          <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-surface-alt-2">
+            <div className="h-1.5 rounded-full bg-positive" style={{ width: `${(onTime / spikeValue) * 100}%` }} />
           </div>
-        )}
-      </section>
-    </div>
+          <div className="mt-3 flex flex-wrap justify-between gap-2 text-[15px] text-ink-body">
+            <span>
+              {waiting > 0 ? (
+                <>
+                  <b className="text-ink">{lakh(waiting)}</b> {open ? "waits for your answer" : "is held for now"}
+                </>
+              ) : (
+                "Nothing is waiting"
+              )}
+            </span>
+            {stopped > 0 && <span>{lakh(stopped)} stopped for cancellation</span>}
+          </div>
+        </section>
 
-      <aside className="space-y-4">
+        {/* Questions */}
+        <section id="questions" className="space-y-3">
+          <div className="flex items-center gap-2 px-1">
+            <h2 className="text-[13px] font-semibold uppercase tracking-wide text-ink-muted">{views.length === 1 ? "One question for you" : `${views.length} questions for you`}</h2>
+            <AiBadge kind="scripted" />
+          </div>
+          {views.map((v) => (
+            <QuestionCard key={v.pattern.id} v={v} />
+          ))}
+        </section>
+      </div>
+
+      <div className="min-w-0 space-y-5">
+        <section className="rounded-2xl bg-white p-5 shadow-card">
+          <h3 className="text-[13px] font-semibold uppercase tracking-wide text-ink-muted">Orders by hour</h3>
+          <div className="mt-3">
+            <VolumeChart s={s} from={48} height={200} />
+          </div>
+          <div className="mt-2 flex gap-4 text-[13px] text-ink-muted">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-sm bg-brand" /> Orders
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-0 w-4 border-t-2 border-dashed border-ink" /> Your usual
+            </span>
+          </div>
+        </section>
+        <WhyQuestions />
+      </div>
+
+      <aside className="min-w-0 space-y-5">
         <PayoutTimeline />
         <TrustProgress />
-        <WhyQuestions />
       </aside>
     </div>
   );

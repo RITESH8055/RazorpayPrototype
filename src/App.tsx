@@ -82,6 +82,8 @@ export default function App() {
         <nav aria-label="Steps" className="mx-auto max-w-[1440px] px-6">
           <ol className="flex items-center gap-6 overflow-x-auto">
             {STEPS.map((step, i) => {
+              // Each view shows only its own steps: merchants never see the analyst's Review and Outcome.
+              if (viewOf(step.screen) !== view) return null;
               // Spike and Questions share the merchant spike screen, so both light up there.
               const active = STEPS[i].screen === state.screen;
               return (
@@ -104,7 +106,7 @@ export default function App() {
       </header>
 
       <main className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-[1440px] px-6 py-6">
+        <div className="mx-auto max-w-[1440px] px-6 py-5">
           {state.screen === "declare" && <DeclareScreen />}
           {state.screen === "spike" && <SpikeScreen />}
           {state.screen === "review" && <AnalystScreen />}
