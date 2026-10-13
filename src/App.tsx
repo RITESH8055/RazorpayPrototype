@@ -80,7 +80,7 @@ export default function App() {
 
         {/* Step indicator: quiet text, one thin progress line */}
         <nav aria-label="Steps" className="mx-auto max-w-[1440px] px-6">
-          <ol className="flex items-center gap-6 overflow-x-auto">
+          <ol className="flex flex-wrap items-center gap-x-6">
             {STEPS.map((step, i) => {
               // Each view shows only its own steps: merchants never see the analyst's Review and Outcome.
               if (viewOf(step.screen) !== view) return null;
