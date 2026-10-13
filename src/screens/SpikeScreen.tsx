@@ -1,183 +1,238 @@
-import { useMemo, useState } from "react";
+import { useRef, useState } from "react";
 import { useCase } from "../state/store";
-import { Button, Card, Chip, Eyebrow } from "../components/ui";
+import { derivePattern, type PatternView } from "../state/derive";
+import { AiBadge, Button, Card, Chip } from "../components/ui";
 import { VolumeChart } from "../components/charts";
-import { inr, splitOrders } from "../lib/features";
-import { GENERAL_WARNING } from "../lib/guardrails";
-import type { Merchant, Scenario } from "../lib/types";
-
-const NAMES = ["Ananya Sharma", "Rohit Verma", "Priya Nair", "Karan Mehta", "Sneha Iyer", "Arjun Rao", "Meera Joshi", "Vikram Singh"];
-const CITIES = ["Pune", "Lucknow", "Kochi", "Indore", "Chennai", "Delhi", "Surat", "Nagpur"];
-
-const maskName = (n: string) => n.split(" ").map((p) => p[0] + "***").join(" ");
-
-export interface PackItem {
-  id: string;
-  title: string;
-  desc: string;
-  preview?: string[];
-}
-
-export function packItems(s: Scenario, m: Merchant): PackItem[] {
-  const active = (id: string) => {
-    const st = m.sources.find((x) => x.id === id)?.status;
-    return st === "verified" || st === "consented";
-  };
-  const items: PackItem[] = [];
-  if (s.offer) items.push({ id: "offer", title: "Offer page snapshot", desc: `${s.offer.url} · "${s.offer.text}"` });
-  if (active("bank")) {
-    const bank = m.sources.find((x) => x.id === "bank")!;
-    items.push({ id: "bank", title: "Bank history summary", desc: bank.details.map((d) => `${d.label}: ${d.value}`).join(" · ") });
-  }
-  const top = [...splitOrders(s).spike].sort((a, b) => b.amount - a.amount).slice(0, 4);
-  items.push({
-    id: "delivery",
-    title: "Delivery confirmations for flagged orders",
-    desc: "Highest-value orders in the spike, with courier proof of delivery. Customer fields masked.",
-    preview: top.map((o, i) => `${o.id} · ${inr(o.amount)} · ${maskName(NAMES[i % NAMES.length])} · +91 9XXXX XX${(31 + i * 17) % 100} · ${CITIES[i % CITIES.length]}`),
-  });
-  if (active("gst")) {
-    const gst = m.sources.find((x) => x.id === "gst")!;
-    items.push({ id: "gst", title: "GST filing status", desc: gst.details.map((d) => `${d.label}: ${d.value}`).join(" · ") });
-  }
-  return items;
-}
+import { fmtDate, inr, lakh } from "../lib/format";
+import { urlToDataUrl, type Submission } from "../lib/readReply";
 
 export default function SpikeScreen() {
-  const { scenario, merchant, features, cs, effective, dispatch } = useCase();
-  const [selected, setSelected] = useState<string[]>([]);
-  const items = useMemo(() => packItems(scenario, merchant), [scenario, merchant]);
-  const kept = items.filter((i) => !cs.removedItems.includes(i.id));
-  const removed = items.filter((i) => cs.removedItems.includes(i.id));
-  const explained = effective.recommendation.label === "explained" && effective.recommendation.recommended_action === "partial_release";
-  const locked = cs.packStatus !== "draft";
+  const { scenario: s, features: f, cs, trust, spikeValue } = useCase();
+  const views = s.patterns.map((p) => derivePattern(s, trust, p, cs.patterns[p.id], cs.reads[p.id], cs.decisions[p.id]));
+  const waiting = views.reduce((a, v) => a + v.waiting, 0);
+  const stopped = views.reduce((a, v) => a + v.stopped, 0);
+  const onTime = spikeValue - waiting - stopped;
+  const env = s.envelope;
+  const declared = cs.declarationStatus === "submitted";
+  const inside = f.volume_multiple >= env.volume_multiple_min && f.volume_multiple <= env.volume_multiple_max;
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-4 rounded-md bg-brand px-5 py-4 text-white">
-        <div className="font-display text-3xl font-semibold">{features.volume_multiple}x</div>
+        <div className="font-display text-3xl font-semibold">{f.volume_multiple}×</div>
         <div className="min-w-[280px] flex-1">
-          <div className="font-display text-[17px] font-semibold">
-            Your sales are {features.volume_multiple}x your usual level. We've prepared a readiness pack so your settlements keep moving.
-          </div>
+          <div className="font-display text-[17px] font-semibold">Your sales are {f.volume_multiple}× your usual level.</div>
           <div className="text-[12px] text-white/80">
-            {features.spike_orders} orders in the last 24 hours vs about {features.baseline_orders_per_day} on a usual day
+            {f.spike_orders} orders in the last 24 hours vs about {f.baseline_orders_per_day} on a usual day
           </div>
         </div>
-        <Chip tone="accent">Festive sale detected</Chip>
+        <Chip tone={declared && inside ? "accent" : "neutral"}>{!declared ? "No sale declared" : inside ? "Within your declared plan" : "Outside your declared plan"}</Chip>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_1.15fr]">
+      <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
         <div className="space-y-4">
-          <Card title="Orders per hour vs your usual level" right={<span className="text-[11px] text-ink-muted">last 48 hours</span>}>
-            <VolumeChart s={scenario} from={48} height={200} />
-            <div className="mt-1 flex gap-4 text-[11px] text-ink-muted">
-              <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-sm bg-brand" />
-                Orders
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="h-0 w-4 border-t-2 border-dashed border-ink" />
-                Usual level
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="h-2 w-3 rounded-sm bg-brand/10" />
-                Sale window
-              </span>
+          <Card title="Settlement for this spike">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-[12px] text-ink-muted">Settling on time</div>
+                <div className="font-display text-2xl font-semibold text-positive">{lakh(onTime)}</div>
+              </div>
+              <div>
+                <div className="text-[12px] text-ink-muted">Waiting on your answers</div>
+                <div className="font-display text-2xl font-semibold text-ink">{lakh(waiting)}</div>
+              </div>
             </div>
+            {stopped > 0 && <div className="mt-2 text-[12px] text-ink-body">Stopped for cancellation review: {lakh(stopped)}</div>}
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-alt-2">
+              <div className="h-2 bg-positive" style={{ width: `${(onTime / spikeValue) * 100}%` }} />
+            </div>
+            <p className="mt-2 text-[11px] text-ink-muted">Only the orders in question wait. Everything else pays out on the usual schedule.</p>
           </Card>
 
-          {explained ? (
-            <div className="rounded-md border border-positive/30 bg-positive-wash p-4">
-              <div className="text-[11px] font-semibold uppercase tracking-wide text-positive">Settlement outlook</div>
-              <p className="mt-1 text-[13px] leading-relaxed text-ink">{effective.recommendation.merchant_message}</p>
+          <Card title="Orders per hour vs your usual level" right={<span className="text-[11px] text-ink-muted">last 48 hours</span>}>
+            <VolumeChart s={s} from={48} height={170} />
+          </Card>
+        </div>
+
+        <div id="questions" className="space-y-3">
+          <div className="flex items-center gap-2">
+            <h2 className="font-display text-[15px] font-semibold">
+              {views.length === 1 ? "One question" : `${views.length} questions`} about your orders
+            </h2>
+            <AiBadge kind="scripted" />
+          </div>
+          {views.map((v) => (
+            <QuestionCard key={v.pattern.id} v={v} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function QuestionCard({ v }: { v: PatternView }) {
+  const { scenario: s, dispatch } = useCase();
+  const p = v.pattern;
+  const ps = v.state;
+  const [composing, setComposing] = useState(false);
+  const [text, setText] = useState("");
+  const [file, setFile] = useState<{ url: string; name: string } | undefined>();
+  const [shipBy, setShipBy] = useState("2026-10-23");
+  const [sample, setSample] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const decided = !!v.decision;
+
+  const submit = (sub: Submission) => {
+    dispatch({ type: "answer", pattern: p.id, submission: sub });
+    setComposing(false);
+  };
+  const loadSample = async () => {
+    const fx = s.invoice_fixture;
+    if (!fx) return;
+    setSample(true);
+    setText(fx.text_transcript);
+    if (fx.image_path) setFile({ url: await urlToDataUrl(fx.image_path), name: fx.image_path.split("/").pop()! });
+  };
+  const onFile = (fl: File | undefined) => {
+    if (!fl) return;
+    const fr = new FileReader();
+    fr.onload = () => setFile({ url: String(fr.result), name: fl.name });
+    fr.readAsDataURL(fl);
+    setSample(false);
+  };
+
+  return (
+    <Card>
+      <div className="flex items-start justify-between gap-3">
+        <p className="font-display text-[15px] font-semibold leading-snug">{p.question_for_merchant}</p>
+        <span className="shrink-0 rounded-sm bg-surface-alt px-2 py-1 text-[12px] font-semibold">{lakh(p.value)}</span>
+      </div>
+
+      {decided ? (
+        <DecidedLines v={v} />
+      ) : ps.status === "submitted" && !composing ? (
+        <div className="mt-3 rounded-md bg-positive-wash px-3 py-2 text-[13px]">
+          <b>Submitted.</b> A reviewer will confirm shortly.
+          {ps.submission?.fileName && <span className="text-ink-muted"> · {ps.submission.fileName}</span>}
+          <button className="ml-2 text-[12px] font-semibold text-brand-dark underline" onClick={() => setComposing(true)}>
+            Edit
+          </button>
+          {ps.edited && <div className="mt-1 text-[11px] text-ink-muted">You edited this answer; the reviewer can see both versions.</div>}
+        </div>
+      ) : ps.status === "not_recognised" ? (
+        <div className="mt-3 rounded-md bg-surface-alt px-3 py-2 text-[13px]">Thanks. We'll stop these from settling and you can cancel before shipping.</div>
+      ) : composing ? (
+        p.kind === "capacity" ? (
+          <div className="mt-3 space-y-2 rounded-md border border-line p-3 text-[13px]">
+            <label className="flex items-center gap-2">
+              Ship all remaining orders by
+              <input type="date" value={shipBy} onChange={(e) => setShipBy(e.target.value)} className="rounded-sm border border-line px-2 py-1" />
+            </label>
+            <Button
+              onClick={() =>
+                submit({
+                  kind: "confirm",
+                  sample: shipBy === "2026-10-23",
+                  text:
+                    shipBy === "2026-10-23"
+                      ? s.invoice_fixture!.text_transcript
+                      : `Yes, all ${p.order_ids.length} remaining orders will ship by ${fmtDate(shipBy)}. Courier pickup booked for the full batch.`,
+                })
+              }
+            >
+              Yes, confirm
+            </Button>
+          </div>
+        ) : (
+          <div className="mt-3 space-y-2 rounded-md border border-line p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="secondary" onClick={() => fileRef.current?.click()}>
+                Upload image or PDF
+              </Button>
+              <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,application/pdf" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
+              {s.invoice_fixture && (
+                <Button variant="ghost" onClick={loadSample}>
+                  Use sample invoice
+                </Button>
+              )}
+              {file && <span className="text-[12px] text-ink-muted">{file.name}</span>}
             </div>
+            {file?.url.startsWith("data:image") && <img src={file.url} alt="Attached invoice" className="max-h-40 rounded-sm border border-line" />}
+            <textarea
+              value={text}
+              onChange={(e) => {
+                setText(e.target.value);
+                setSample(false);
+              }}
+              placeholder="Or paste text, e.g. a WhatsApp message or PO details"
+              className="h-20 w-full rounded-sm border border-line p-2 text-[12px] outline-none focus:border-brand"
+            />
+            <Button disabled={!file && !text.trim()} onClick={() => submit({ kind: file ? "invoice" : "text", text, fileDataUrl: file?.url, fileName: file?.name, sample })}>
+              Submit answer
+            </Button>
+          </div>
+        )
+      ) : (
+        <>
+          {ps.status === "later" && <div className="mt-3 rounded-md bg-surface-alt px-3 py-2 text-[12px]">{lakh(v.waiting)} stays held until this is answered. The rest settles normally.</div>}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button onClick={() => setComposing(true)}>{p.kind === "capacity" ? "Yes, set a ship date" : "Yes, attach proof"}</Button>
+            <Button variant="secondary" onClick={() => dispatch({ type: "patternStatus", pattern: p.id, status: "not_recognised" })}>
+              Don't recognise these orders
+            </Button>
+            {ps.status !== "later" && (
+              <Button variant="ghost" onClick={() => dispatch({ type: "patternStatus", pattern: p.id, status: "later" })}>
+                Answer later
+              </Button>
+            )}
+          </div>
+        </>
+      )}
+    </Card>
+  );
+}
+
+function DecidedLines({ v }: { v: PatternView }) {
+  const { dispatch } = useCase();
+  const d = v.decision!;
+  const p = v.pattern;
+  const unmatched = v.run?.unmatchedValue ?? 0;
+  const showFollowUp = p.follow_up_question && unmatched > 0 && d.kind !== "override";
+  return (
+    <div className="mt-3 space-y-2 text-[13px]">
+      <div className="rounded-md bg-positive-wash px-3 py-2">
+        {d.releaseNow > 0 ? (
+          <>
+            Released <b>{inr(d.releaseNow)}</b> today.{" "}
+          </>
+        ) : null}
+        {d.reserve > 0 ? (
+          <>
+            <b>{inr(d.reserve)}</b> held until {fmtDate(d.reserveUntil)}.
+          </>
+        ) : (
+          <>Nothing from these orders is held.</>
+        )}
+      </div>
+      {showFollowUp && (
+        <div className="rounded-md border border-brand/30 bg-brand-wash p-3">
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-dark">Follow-up</span>
+            <AiBadge kind="scripted" />
+          </div>
+          <p className="mt-1 font-semibold">{p.follow_up_question!.replace("{unmatched}", inr(unmatched))}</p>
+          {v.state.followUp ? (
+            <div className="mt-2 text-[12px] text-ink-body">{v.state.followUp === "answered" ? "Submitted. A reviewer will confirm shortly." : "Thanks. That payment stays out of settlement while we check it."}</div>
           ) : (
-            <div className="rounded-md border border-line bg-white p-4">
-              <div className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">Heads up</div>
-              <p className="mt-1 text-[13px] leading-relaxed text-ink">{GENERAL_WARNING}</p>
+            <div className="mt-2 flex gap-2">
+              <Button onClick={() => dispatch({ type: "followUp", pattern: p.id, answer: "answered" })}>Yes, same order</Button>
+              <Button variant="secondary" onClick={() => dispatch({ type: "followUp", pattern: p.id, answer: "not_recognised" })}>
+                Don't recognise it
+              </Button>
             </div>
           )}
         </div>
-
-        <Card
-          id="pack"
-          title="Readiness pack"
-          right={
-            <Chip tone={cs.packStatus === "shared" ? "positive" : cs.packStatus === "stopped" ? "danger" : "neutral"}>
-              {cs.packStatus === "shared" ? `Shared · ${kept.length} items` : cs.packStatus === "stopped" ? "Sharing stopped" : "Not shared yet"}
-            </Chip>
-          }
-        >
-          <p className="mb-3 text-[12px] text-ink-body">Only the orders in question go in. You choose what Razorpay's risk team can see, and you can stop sharing at any time.</p>
-          <ul className="space-y-2">
-            {kept.map((item) => (
-              <li key={item.id} className="rounded-md border border-line p-3">
-                <label className="flex cursor-pointer items-start gap-3">
-                  <input
-                    type="checkbox"
-                    className="mt-0.5 h-4 w-4 accent-[#305EFF]"
-                    disabled={locked}
-                    checked={selected.includes(item.id)}
-                    onChange={(e) => setSelected((cur) => (e.target.checked ? [...cur, item.id] : cur.filter((x) => x !== item.id)))}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[13px] font-semibold">{item.title}</div>
-                    <div className="text-[12px] text-ink-muted">{item.desc}</div>
-                    {item.preview && (
-                      <ul className="mt-1.5 space-y-0.5 rounded-sm bg-surface-alt px-2 py-1.5 font-mono text-[11px] text-ink-body">
-                        {item.preview.map((p) => (
-                          <li key={p}>{p}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </label>
-              </li>
-            ))}
-            {removed.map((item) => (
-              <li key={item.id} className="flex items-center justify-between rounded-md border border-dashed border-line px-3 py-2 text-[12px] text-ink-subtle">
-                <span className="line-through">{item.title}</span>
-                {!locked && (
-                  <button className="font-semibold text-brand-dark" onClick={() => dispatch({ type: "toggleItem", item: item.id, removed: false })}>
-                    Add back
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            {cs.packStatus !== "shared" && (
-              <Button onClick={() => dispatch({ type: "pack", status: "shared" })} disabled={kept.length === 0}>
-                {cs.packStatus === "stopped" ? "Share again" : "Approve and share"}
-              </Button>
-            )}
-            <Button
-              variant="secondary"
-              disabled={locked || selected.length === 0}
-              onClick={() => {
-                selected.forEach((id) => dispatch({ type: "toggleItem", item: id, removed: true }));
-                setSelected([]);
-              }}
-            >
-              Remove selected{selected.length ? ` (${selected.length})` : ""}
-            </Button>
-            <Button variant="danger" disabled={cs.packStatus === "stopped"} onClick={() => dispatch({ type: "pack", status: "stopped" })}>
-              Stop sharing
-            </Button>
-            {cs.packStatus === "shared" && (
-              <Button variant="ghost" className="ml-auto" onClick={() => dispatch({ type: "screen", screen: "review" })}>
-                Switch to analyst view →
-              </Button>
-            )}
-          </div>
-          <div className="mt-3">
-            <Eyebrow>What happens next</Eyebrow>
-            <p className="text-[12px] text-ink-body">A Razorpay analyst reviews the pack. A person decides every settlement change; the AI only recommends.</p>
-          </div>
-        </Card>
-      </div>
+      )}
     </div>
   );
 }

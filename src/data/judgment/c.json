@@ -1,0 +1,40 @@
+{
+  "label": "unexplained",
+  "confidence": 0.81,
+  "reasons": [
+    {
+      "text": "Average order value rose because of a separate cluster of 140 orders between ₹38,010 and ₹44,930. The rest of the distribution is unchanged. Home decor festive lifts shift the whole range, not an isolated block.",
+      "evidence_ids": [
+        "E2",
+        "E3"
+      ]
+    },
+    {
+      "text": "9 card fingerprints and 3 devices account for 60% of the high-value cluster.",
+      "evidence_ids": [
+        "E7"
+      ]
+    },
+    {
+      "text": "The site advertises DIWALI10, yet it appears in only 4% of spike orders, so the offer does not explain the volume.",
+      "evidence_ids": [
+        "E4",
+        "E5"
+      ]
+    },
+    {
+      "text": "97% new customers with near-zero social mentions: there is no visible demand source for an 8.2x spike.",
+      "evidence_ids": [
+        "E6",
+        "E8",
+        "E1"
+      ]
+    },
+    {
+      "text": "2 posts say orders were never received.",
+      "evidence_ids": [
+        "E9"
+      ]
+    }
+  ]
+}

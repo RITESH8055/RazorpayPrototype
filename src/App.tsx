@@ -2,16 +2,16 @@ import { useEffect, useState } from "react";
 import { SCENARIO_IDS, SCENARIOS } from "./lib/scenarios";
 import { useStore, viewOf, type Screen } from "./state/store";
 import { Chip } from "./components/ui";
-import ProfileScreen from "./screens/ProfileScreen";
+import DeclareScreen from "./screens/DeclareScreen";
 import SpikeScreen from "./screens/SpikeScreen";
 import AnalystScreen from "./screens/AnalystScreen";
 import OutcomeScreen from "./screens/OutcomeScreen";
 
 const STEPS: { name: string; screen: Screen; anchor?: string }[] = [
-  { name: "Profile", screen: "profile" },
+  { name: "Declare", screen: "declare" },
   { name: "Spike", screen: "spike" },
-  { name: "Pack", screen: "spike", anchor: "pack" },
-  { name: "Decision", screen: "review" },
+  { name: "Questions", screen: "spike", anchor: "questions" },
+  { name: "Review", screen: "review" },
   { name: "Outcome", screen: "outcome" },
 ];
 
@@ -28,8 +28,9 @@ export default function App() {
       .catch(() => setApiMode("fallback"));
   }, []);
 
-  const done = (i: number) =>
-    [true, true, cs.packStatus === "shared", cs.decision !== null, cs.decision !== null][i] && STEPS[i].screen !== state.screen;
+  const decided = Object.keys(cs.decisions).length > 0;
+  const answered = Object.values(cs.patterns).every((p) => p.status === "submitted" || p.status === "not_recognised");
+  const done = (i: number) => [cs.declarationStatus === "submitted", true, answered, decided, decided][i] && STEPS[i].screen !== state.screen;
 
   const goStep = (i: number) => {
     dispatch({ type: "screen", screen: STEPS[i].screen });
@@ -48,8 +49,8 @@ export default function App() {
               </svg>
             </div>
             <div className="leading-tight">
-              <div className="font-display text-[15px] font-semibold">Hold Resolver</div>
-              <div className="text-[11px] text-ink-muted">Growth readiness for festive spikes</div>
+              <div className="font-display text-[15px] font-semibold">Sale Readiness</div>
+              <div className="text-[11px] text-ink-muted">Declare the sale. Answer one question. Get paid on time.</div>
             </div>
           </div>
 
@@ -67,14 +68,14 @@ export default function App() {
           </nav>
 
           <div className="ml-auto flex items-center gap-3">
-            <Chip tone={apiMode === "live" ? "positive" : "neutral"}>{apiMode === "checking" ? "Checking API…" : apiMode === "live" ? "● Live AI ready" : "Fallback mode (no API key)"}</Chip>
+            <Chip tone={apiMode === "live" ? "positive" : "neutral"}>{apiMode === "checking" ? "Checking API…" : apiMode === "live" ? "● Live reply reading ready" : "Fallback mode (no API key)"}</Chip>
             <div className="flex rounded-md border border-line p-0.5" role="tablist" aria-label="View">
               {(["merchant", "analyst"] as const).map((v) => (
                 <button
                   key={v}
                   role="tab"
                   aria-selected={view === v}
-                  onClick={() => view !== v && dispatch({ type: "screen", screen: v === "merchant" ? "profile" : "review" })}
+                  onClick={() => view !== v && dispatch({ type: "screen", screen: v === "merchant" ? "declare" : "review" })}
                   className={`rounded-sm px-3 py-1 text-[12px] font-semibold ${view === v ? "bg-brand text-white" : "text-ink-body hover:text-ink"}`}
                 >
                   {v === "merchant" ? "Merchant" : "Risk analyst"}
@@ -118,7 +119,7 @@ export default function App() {
 
       <main className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto max-w-[1440px] px-5 py-4">
-          {state.screen === "profile" && <ProfileScreen />}
+          {state.screen === "declare" && <DeclareScreen />}
           {state.screen === "spike" && <SpikeScreen />}
           {state.screen === "review" && <AnalystScreen />}
           {state.screen === "outcome" && <OutcomeScreen />}
@@ -128,7 +129,7 @@ export default function App() {
       <footer className="border-t border-line bg-white">
         <div className="mx-auto flex max-w-[1440px] flex-wrap items-center gap-3 px-5 py-2 text-[11px] text-ink-muted">
           <Chip tone="accent">Synthetic data</Chip>
-          <span>Every merchant, number, social post and outcome shown here is synthetic. Thresholds and caps are assumed placeholders.</span>
+          <span>Every company, GSTIN, invoice, number and outcome here is synthetic; all companies are fictional. Thresholds are assumed placeholders.</span>
           <span className="ml-auto">Prototype for the Razorpay x ISB Build Challenge. Not affiliated with or endorsed by Razorpay.</span>
         </div>
       </footer>

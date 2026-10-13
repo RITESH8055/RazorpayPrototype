@@ -1,0 +1,40 @@
+{
+  "label": "explained",
+  "confidence": 0.86,
+  "reasons": [
+    {
+      "text": "Excluding the Veda cluster, the whole order value distribution moved right (AOV ₹1,885 → ₹3,110, rest-of-range median +53%). That matches fashion's order-value-led festive pattern; the 7 corporate payments are handled as a separate pattern.",
+      "evidence_ids": [
+        "E2",
+        "E3"
+      ]
+    },
+    {
+      "text": "The 'Buy 2 festive sets, 25% off' offer went live the hour the spike began, and FESTIVE25 appears in 71% of spike orders. The bundle explains the larger baskets.",
+      "evidence_ids": [
+        "E4",
+        "E5"
+      ]
+    },
+    {
+      "text": "Influencer reel mentions surged 6 hours before volume rose, so demand led payments rather than following them.",
+      "evidence_ids": [
+        "E8"
+      ]
+    },
+    {
+      "text": "62% new customers is consistent with a promoted sale, and there are no repeated card or device clusters among them.",
+      "evidence_ids": [
+        "E6",
+        "E7"
+      ]
+    },
+    {
+      "text": "14 months of Account Aggregator inflows give a merchant-specific baseline, and the only complaint is a delivery delay.",
+      "evidence_ids": [
+        "E10",
+        "E9"
+      ]
+    }
+  ]
+}

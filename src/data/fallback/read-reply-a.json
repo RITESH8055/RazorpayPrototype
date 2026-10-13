@@ -1,0 +1,39 @@
+{
+  "buyer_name": {
+    "value": "Veda Consulting Pvt Ltd",
+    "confidence": 0.97
+  },
+  "gstin": {
+    "value": "29AAICV4821K1Z5",
+    "confidence": 0.95
+  },
+  "invoice_total": {
+    "value": 504000,
+    "confidence": 0.96
+  },
+  "line_items": [
+    {
+      "description": "Festive kurta set, gift boxed",
+      "quantity": 80,
+      "amount": 336000
+    },
+    {
+      "description": "Festive saree set, gift boxed",
+      "quantity": 40,
+      "amount": 168000
+    }
+  ],
+  "quantity_total": {
+    "value": 120,
+    "confidence": 0.95
+  },
+  "delivery_addresses": [
+    "Veda Consulting, 4th Floor, Lakeside Business Park, Bellandur, Bengaluru 560103",
+    "Veda Consulting, 2nd Floor, Garden View Towers, Koramangala, Bengaluru 560034"
+  ],
+  "invoice_date": {
+    "value": "2026-10-17",
+    "confidence": 0.93
+  },
+  "document_contains_instructions": false
+}

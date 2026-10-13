@@ -1,5 +1,7 @@
 // All numbers the AI sees are computed here. The model never computes numbers itself.
 import type { Evidence, Features, Merchant, Order, Scenario } from "./types";
+import { inr } from "./format";
+export { inr };
 
 const TRIGGER_MULTIPLE = 3; // assumed placeholder (PRD section 8)
 const TRIGGER_CONSECUTIVE_HOURS = 3;
@@ -31,7 +33,12 @@ function ksStatistic(a: number[], b: number[]) {
   return d;
 }
 
-function repeated(orders: Order[], key: "card_fp" | "device_fp", universe: Order[]) {
+// Card fingerprints only exist for card payments; netbanking and UPI accounts are not "cards".
+const isCard = (o: Order) => (o.method ?? "card") === "card";
+
+function repeated(all: Order[], key: "card_fp" | "device_fp", allUniverse: Order[]) {
+  const orders = key === "card_fp" ? all.filter(isCard) : all;
+  const universe = key === "card_fp" ? allUniverse.filter(isCard) : allUniverse;
   const counts = new Map<string, number>();
   for (const o of universe) counts.set(o[key], (counts.get(o[key]) ?? 0) + 1);
   const hot = new Set([...counts].filter(([, n]) => n >= REPEAT_THRESHOLD).map(([k]) => k));
@@ -74,6 +81,8 @@ export function computeFeatures(s: Scenario): Features {
   const spikeOrders = s.hourly.slice(s.spikeStartHour).reduce((a, h) => a + h.orders, 0);
   const aovBase = mean(baseAmounts);
   const aovSpike = mean(spikeAmounts);
+  const flagged = new Set(s.patterns.filter((p) => p.kind === "bulk_buyer").flatMap((p) => p.order_ids));
+  const aovSpikeEx = mean(spike.filter((o) => !flagged.has(o.id)).map((o) => o.amount));
 
   // Cluster detection (simple): orders above the baseline 99th percentile. If those
   // orders split around a wide gap, the block above the gap is the candidate cluster.
@@ -113,6 +122,7 @@ export function computeFeatures(s: Scenario): Features {
     aov_baseline: Math.round(aovBase),
     aov_spike: Math.round(aovSpike),
     aov_shift_pct: Math.round((aovSpike / aovBase - 1) * 100),
+    aov_spike_ex_patterns: Math.round(aovSpikeEx),
     distribution_shift_score: round(ksStatistic(baseAmounts, spikeAmounts), 2),
     baseline_p99: Math.round(p99),
     share_above_baseline_p99: round(shareAbove, 3),
@@ -137,7 +147,6 @@ export function computeFeatures(s: Scenario): Features {
 }
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
-export const inr = (x: number) => "₹" + Math.round(x).toLocaleString("en-IN");
 
 /** Evidence snippets, each with a stable ID. Fallback results cite these same IDs. */
 export function buildEvidence(s: Scenario, f: Features, m: Merchant): Evidence[] {
@@ -156,7 +165,7 @@ export function buildEvidence(s: Scenario, f: Features, m: Merchant): Evidence[]
       title: "Order value distribution",
       text: f.separate_cluster
         ? `Average order value ${inr(f.aov_baseline)} → ${inr(f.aov_spike)}, but driven by a separate cluster: ${f.cluster_orders} orders between ${inr(f.cluster_range![0])} and ${inr(f.cluster_range![1])} (above the baseline 99th percentile of ${inr(f.baseline_p99)}). The rest of the distribution moved ${f.rest_median_shift_pct}% at the median.`
-        : `Average order value ${inr(f.aov_baseline)} → ${inr(f.aov_spike)} (${signed(f.aov_shift_pct)}%). Distribution shift score ${f.distribution_shift_score}. ${pct(f.share_above_baseline_p99)} of spike orders sit above the baseline 99th percentile; median of the rest moved ${signed(f.rest_median_shift_pct)}%. No separate cluster.`,
+        : `Average order value ${inr(f.aov_baseline)} → ${inr(f.aov_spike)} (${signed(f.aov_shift_pct)}%)${f.aov_spike_ex_patterns !== f.aov_spike ? `; ${inr(f.aov_spike_ex_patterns)} excluding the flagged bulk pattern` : ""}. Distribution shift score ${f.distribution_shift_score}. ${pct(f.share_above_baseline_p99)} of spike orders sit above the baseline 99th percentile; median of the rest moved ${signed(f.rest_median_shift_pct)}%. No separate cluster.`,
     },
     {
       id: "E3",
@@ -219,8 +228,8 @@ export function buildEvidence(s: Scenario, f: Features, m: Merchant): Evidence[]
       id: "E10",
       card: "volume",
       title: "Baseline and profile",
-      text: `${m.daysOnRazorpay} days on Razorpay. Baseline from ${s.baseline.label}. Profile sources: ${m.sources
-        .filter((x) => x.status === "verified" || x.status === "consented")
+      text: `${m.daysOnRazorpay} days on Razorpay. Baseline from ${s.baseline.label}. Sources shared: ${m.sources
+        .filter((x) => x.status === "shared" || x.status === "always_on")
         .map((x) => x.name)
         .join(", ")}.`,
     },

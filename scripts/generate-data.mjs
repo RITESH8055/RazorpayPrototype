@@ -4,9 +4,13 @@
 import { writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { addV2 } from "./v2-fixtures.mjs";
 
-const OUT = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "data", "scenarios");
+const DATA = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "data");
+const OUT = join(DATA, "scenarios");
+const FALLBACK = join(DATA, "fallback");
 mkdirSync(OUT, { recursive: true });
+mkdirSync(FALLBACK, { recursive: true });
 
 function rng(seed) {
   let a = seed >>> 0;
@@ -282,9 +286,11 @@ const scenarios = [
 
 for (const cfg of scenarios) {
   if (process.env["SEED_" + cfg.id]) cfg.seed = Number(process.env["SEED_" + cfg.id]);
-  const s = build(cfg);
-  writeFileSync(join(OUT, `${cfg.id}.json`), JSON.stringify(s));
+  const s = addV2(build(cfg));
+  const { read_reply_fallback, ...scenario } = s;
+  writeFileSync(join(OUT, `${cfg.id}.json`), JSON.stringify(scenario));
+  writeFileSync(join(FALLBACK, `read-reply-${cfg.id}.json`), JSON.stringify(read_reply_fallback, null, 2) + "\n");
   const spike = s.hourly.slice(SPIKE_START).reduce((a, h) => a + h.orders, 0);
   const base = s.baseline.hourly.reduce((a, b) => a + b, 0);
-  console.log(cfg.id, "orders", s.orders.length, "spike/base", (spike / base).toFixed(2));
+  console.log(cfg.id, "orders", s.orders.length, "spike/base", (spike / base).toFixed(2), "patterns", s.patterns.map((p) => `${p.id}:${p.order_ids.length}:${p.value}`).join(","));
 }

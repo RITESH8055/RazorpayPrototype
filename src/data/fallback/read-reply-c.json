@@ -1,0 +1,33 @@
+{
+  "buyer_name": {
+    "value": "Northwind Interiors Pvt Ltd",
+    "confidence": 0.96
+  },
+  "gstin": {
+    "value": "09AAJCN7314M1ZQ",
+    "confidence": 0.94
+  },
+  "invoice_total": {
+    "value": 5783040,
+    "confidence": 0.95
+  },
+  "line_items": [
+    {
+      "description": "Sheesham wood sofa set (3+1+1)",
+      "quantity": 140,
+      "amount": 5783040
+    }
+  ],
+  "quantity_total": {
+    "value": 140,
+    "confidence": 0.95
+  },
+  "delivery_addresses": [
+    "Northwind Interiors, Plot 14, Sector 63, Noida 201301"
+  ],
+  "invoice_date": {
+    "value": "2026-10-18",
+    "confidence": 0.92
+  },
+  "document_contains_instructions": true
+}

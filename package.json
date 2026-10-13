@@ -11,7 +11,7 @@
     "typecheck": "tsc -b",
     "data": "node scripts/generate-data.mjs",
     "preview": "vite preview",
-    "test": "tsx scripts/check-guardrails.ts"
+    "test": "tsx scripts/check-logic.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",

@@ -1,7 +1,5 @@
 export type ScenarioId = "a" | "b" | "c";
 export type Label = "explained" | "partly_explained" | "unexplained";
-export type AiAction = "partial_release" | "hold_and_request" | "hold";
-export type FinalAction = AiAction | "full_release";
 
 export interface Order {
   id: string;
@@ -11,6 +9,8 @@ export interface Order {
   coupon: string | null;
   card_fp: string;
   device_fp: string;
+  method?: "card" | "upi" | "netbanking";
+  payer_name?: string;
 }
 
 export interface SocialPost {
@@ -41,11 +41,95 @@ export interface Scenario {
     highValueChargebackPct: number;
     releaseDay: number | null;
   };
-  learning: { approve: string; modify: string };
+  declaration: Declaration | null;
+  envelope: Envelope;
+  history: History;
+  category_ceiling_multiple: number;
+  patterns: Pattern[];
+  invoice_fixture: { image_path: string | null; text_transcript: string } | null;
+  registry_fixture: { gstin: string; status: string; legal_name: string };
+  courier_fixture: { shipped_share: number; orders: Record<string, { address?: string; city: string; status: string }> };
+  learning: { delivered: number; refunds: number; disputes: number; trust_after: number; false_hold_note: string };
+}
+
+export interface Declaration {
+  sale_name: string;
+  start: string;
+  end: string;
+  offer_text: string;
+  expected_daily_orders_min: number;
+  expected_daily_orders_max: number;
+  influencer_plan: string;
+}
+
+export interface Envelope {
+  volume_multiple_min: number;
+  volume_multiple_max: number;
+  shape: "value_led" | "count_led";
+  expected_coupon_pct: number;
+  expected_timing: string;
+  note: string;
+}
+
+export interface History {
+  clean_delivered_orders: number;
+  dispute_rate_pct: number;
+  days_on_razorpay: number;
+  regions_shipped: string[];
+  categories_sold: string[];
+  order_value_p99: number;
+}
+
+export type TriggerFlag = "new_card_device_cluster" | "new_regions" | "order_value_outside_history" | "category_shift";
+
+export interface Pattern {
+  id: string;
+  kind: "bulk_buyer" | "capacity";
+  label: string;
+  description_for_analyst: string;
+  question_for_merchant: string;
+  follow_up_question?: string;
+  order_ids: string[];
+  value: number;
+  trigger_flags: TriggerFlag[];
+}
+
+export type TrustLevel = "New" | "Building" | "Trusted";
+
+export interface Field<T> {
+  value: T;
+  confidence: number;
+}
+
+export interface Extraction {
+  buyer_name: Field<string>;
+  gstin: Field<string>;
+  invoice_total: Field<number>;
+  line_items: { description: string; quantity: number; amount: number }[];
+  quantity_total: Field<number>;
+  delivery_addresses: string[];
+  invoice_date: Field<string>;
+  document_contains_instructions: boolean;
+}
+
+export interface Check {
+  name: string;
+  pass: boolean;
+  detail: string;
+  /** Observed by a party the merchant does not control (bank, registry, courier, Razorpay network). */
+  independent: boolean;
+}
+
+export interface ReadResult {
+  source: "live" | "fallback";
+  fallbackReason?: string;
+  latencyMs: number;
+  extraction: Extraction;
+  injectionDetected: boolean;
 }
 
 export type SourceId = "mca" | "gst" | "bank" | "razorpay";
-export type SourceStatus = "verified" | "consented" | "not_consented" | "withdrawn" | "pending_reverification";
+export type SourceStatus = "shared" | "not_shared" | "withdrawn" | "always_on";
 
 export interface ProfileSource {
   id: SourceId;
@@ -54,6 +138,7 @@ export interface ProfileSource {
   status: SourceStatus;
   pulledOn: string | null;
   withdrawable: boolean;
+  helper?: string;
   details: { label: string; value: string }[];
 }
 
@@ -64,7 +149,6 @@ export interface Merchant {
   city: string;
   incorporated: string;
   daysOnRazorpay: number;
-  usualDailyGmv: number;
   sources: ProfileSource[];
 }
 
@@ -78,6 +162,7 @@ export interface Features {
   aov_baseline: number;
   aov_spike: number;
   aov_shift_pct: number;
+  aov_spike_ex_patterns: number;
   distribution_shift_score: number;
   baseline_p99: number;
   share_above_baseline_p99: number;
@@ -114,44 +199,27 @@ export interface Reason {
   evidence_ids: string[];
 }
 
-export interface Recommendation {
+/** v0.1 spike judgment, now shown as Scripted context on the analyst screen. */
+export interface Judgment {
   label: Label;
   confidence: number;
   reasons: Reason[];
-  recommended_action: AiAction;
-  partial_release_pct: number;
-  reserve_days: number;
-  evidence_requests: string[];
-  merchant_message: string;
-}
-
-export interface GuardrailFlag {
-  rule: string;
-  detail: string;
-}
-
-export interface AnalysisResult {
-  source: "live" | "fallback";
-  fallbackReason?: string;
-  latencyMs: number;
-  recommendation: Recommendation;
-  droppedReasons: Reason[];
-  flags: GuardrailFlag[];
-  insufficientEvidence: boolean;
 }
 
 export type DecisionKind = "approve" | "modify" | "override";
 
 export interface Decision {
   kind: DecisionKind;
-  action: FinalAction;
-  releasePct: number;
-  reserveDays: number;
+  patternId: string;
+  releaseNow: number;
+  reserve: number;
+  floor: number;
+  reserveUntil: string;
+  suggestedReserve: number;
+  overrideChoice?: string;
   overrideReason?: string;
   overrideNote?: string;
-  aiLabel: Label;
-  aiAction: AiAction;
-  aiSource: "live" | "fallback";
+  readSource: "live" | "fallback" | "none";
   decidedBy: string;
   secondsToDecision: number;
   at: string;
