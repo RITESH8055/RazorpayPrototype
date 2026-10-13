@@ -5,11 +5,11 @@ import { AiBadge, Button, MERCHANT_PAGE as PAGE } from "../components/ui";
 import { VolumeChart } from "../components/charts";
 import { fmtDate, inr, lakh } from "../shared/format";
 import { urlToDataUrl, type Submission } from "../lib/readReply";
-import { PayoutTimeline, TrustProgress, useSettlement, WhyQuestions } from "./MerchantSidebar";
+import { PayoutTimeline, TrustProgress, useSettlement } from "./MerchantSidebar";
 
 export default function SpikeScreen() {
   const { scenario: s, features: f, cs } = useCase();
-  const { views, waiting, stopped, onTime, spikeValue, open } = useSettlement();
+  const { waiting, stopped, onTime, spikeValue, open } = useSettlement();
   const env = s.envelope;
   const declared = cs.declarationStatus === "submitted";
   const inside = f.volume_multiple >= env.volume_multiple_min && f.volume_multiple <= env.volume_multiple_max;
@@ -47,16 +47,8 @@ export default function SpikeScreen() {
           </div>
         </section>
 
-        {/* Questions */}
-        <section id="questions" className="space-y-3">
-          <div className="flex items-center gap-2 px-1">
-            <h2 className="text-[13px] font-semibold uppercase tracking-wide text-ink-muted">{views.length === 1 ? "One question for you" : `${views.length} questions for you`}</h2>
-            <AiBadge kind="scripted" />
-          </div>
-          {views.map((v) => (
-            <QuestionCard key={v.pattern.id} v={v} />
-          ))}
-        </section>
+        {/* Questions live on their own step; here, just their status and a way in */}
+        <QuestionsStatus />
       </div>
 
       <div className="min-w-0 space-y-5">
@@ -74,7 +66,6 @@ export default function SpikeScreen() {
             </span>
           </div>
         </section>
-        <WhyQuestions />
       </div>
 
       <aside className="min-w-0 space-y-5">
@@ -85,7 +76,7 @@ export default function SpikeScreen() {
   );
 }
 
-function QuestionCard({ v }: { v: PatternView }) {
+export function QuestionCard({ v }: { v: PatternView }) {
   const { scenario: s, dispatch } = useCase();
   const p = v.pattern;
   const ps = v.state;
@@ -267,5 +258,36 @@ function DecidedLines({ v }: { v: PatternView }) {
         </div>
       )}
     </>
+  );
+}
+
+function QuestionsStatus() {
+  const { dispatch } = useCase();
+  const { views, open } = useSettlement();
+  const answered = views.filter((v) => v.state.status === "submitted" && !v.decision).length;
+  const decided = views.filter((v) => v.decision).length;
+  const title = open
+    ? `${open === 1 ? "One question" : `${open} questions`} for you`
+    : decided === views.length
+      ? "All questions reviewed"
+      : answered
+        ? "Answer sent"
+        : "Questions handled";
+  const sub = open
+    ? "Answer to release the amount waiting. The rest of your sale settles normally."
+    : decided === views.length
+      ? "A reviewer has made a decision. See the details and any follow-up."
+      : "A reviewer will confirm shortly. You can still edit your answer.";
+  return (
+    <section className="rounded-2xl bg-white p-6 shadow-card">
+      <div className="flex items-center gap-2">
+        <h2 className="font-display text-[19px] font-semibold">{title}</h2>
+        {open > 0 && <span className="grid h-6 min-w-6 place-items-center rounded-full bg-brand px-1.5 text-[12px] font-bold text-white">{open}</span>}
+      </div>
+      <p className="mt-1 text-[15px] text-ink-muted">{sub}</p>
+      <Button size="lg" variant={open ? "primary" : "secondary"} className="mt-4 w-full" onClick={() => dispatch({ type: "screen", screen: "questions" })}>
+        {open ? "Answer now" : "View questions"}
+      </Button>
+    </section>
   );
 }

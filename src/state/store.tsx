@@ -5,7 +5,7 @@ import { buildEvidence } from "../lib/features";
 import type { Submission } from "../lib/readReply";
 
 export type View = "merchant" | "analyst";
-export type Screen = "declare" | "spike" | "review" | "outcome";
+export type Screen = "declare" | "spike" | "questions" | "review" | "outcome";
 
 export type PatternStatus = "open" | "submitted" | "not_recognised" | "later";
 
@@ -180,7 +180,7 @@ export function useStore() {
   return ctx;
 }
 
-export const viewOf = (screen: Screen): View => (screen === "declare" || screen === "spike" ? "merchant" : "analyst");
+export const viewOf = (screen: Screen): View => (screen === "declare" || screen === "spike" || screen === "questions" ? "merchant" : "analyst");
 
 /** Everything a screen needs about the current scenario, with consent changes applied. */
 export function useCase() {

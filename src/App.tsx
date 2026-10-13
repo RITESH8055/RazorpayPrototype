@@ -3,13 +3,14 @@ import { SCENARIO_IDS, SCENARIOS } from "./lib/scenarios";
 import { useStore, viewOf, type Screen } from "./state/store";
 import DeclareScreen from "./screens/DeclareScreen";
 import SpikeScreen from "./screens/SpikeScreen";
+import QuestionsScreen from "./screens/QuestionsScreen";
 import AnalystScreen from "./screens/AnalystScreen";
 import OutcomeScreen from "./screens/OutcomeScreen";
 
-const STEPS: { name: string; screen: Screen; anchor?: string }[] = [
+const STEPS: { name: string; screen: Screen }[] = [
   { name: "Declare", screen: "declare" },
   { name: "Spike", screen: "spike" },
-  { name: "Questions", screen: "spike", anchor: "questions" },
+  { name: "Questions", screen: "questions" },
   { name: "Review", screen: "review" },
   { name: "Outcome", screen: "outcome" },
 ];
@@ -33,7 +34,6 @@ export default function App() {
 
   const goStep = (i: number) => {
     dispatch({ type: "screen", screen: STEPS[i].screen });
-    if (STEPS[i].anchor) setTimeout(() => document.getElementById(STEPS[i].anchor!)?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
   };
 
   return (
@@ -84,7 +84,6 @@ export default function App() {
             {STEPS.map((step, i) => {
               // Each view shows only its own steps: merchants never see the analyst's Review and Outcome.
               if (viewOf(step.screen) !== view) return null;
-              // Spike and Questions share the merchant spike screen, so both light up there.
               const active = STEPS[i].screen === state.screen;
               return (
                 <li key={step.name}>
@@ -109,6 +108,7 @@ export default function App() {
         <div className="mx-auto max-w-[1440px] px-6 py-5">
           {state.screen === "declare" && <DeclareScreen />}
           {state.screen === "spike" && <SpikeScreen />}
+          {state.screen === "questions" && <QuestionsScreen />}
           {state.screen === "review" && <AnalystScreen />}
           {state.screen === "outcome" && <OutcomeScreen />}
         </div>

@@ -65,7 +65,7 @@ export function LiveSale() {
           </div>
         )}
       </dl>
-      <Button className="mt-4 w-full" variant={open ? "primary" : "secondary"} onClick={() => dispatch({ type: "screen", screen: "spike" })}>
+      <Button className="mt-4 w-full" variant={open ? "primary" : "secondary"} onClick={() => dispatch({ type: "screen", screen: open ? "questions" : "spike" })}>
         {open ? `Answer ${open === 1 ? "1 question" : `${open} questions`}` : "See settlement"}
       </Button>
     </Panel>
